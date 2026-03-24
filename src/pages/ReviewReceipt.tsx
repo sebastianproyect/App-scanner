@@ -47,6 +47,7 @@ export default function ReviewReceipt() {
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [aiError, setAiError] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [aiDone, setAiDone] = useState(false)
 
@@ -64,13 +65,14 @@ export default function ReviewReceipt() {
 
   async function analyzeWithAI() {
     setAnalyzing(true)
+    setAiError('')
     try {
       const { data, error: fnError } = await supabase.functions.invoke('parse-receipt', {
         body: { imageBase64: imageData }
       })
 
       if (fnError) throw new Error(fnError.message)
-      if (!data?.data) throw new Error('Sin respuesta de la IA')
+      if (!data?.data) throw new Error(data?.error ?? 'Sin respuesta de la IA')
 
       const result = data.data as AiResult
 
@@ -93,7 +95,7 @@ export default function ReviewReceipt() {
       setAiDone(true)
     } catch (e) {
       console.error('Error analizando ticket:', e)
-      // Don't show error to user — they can fill manually
+      setAiError('La IA no pudo leer el ticket. Completa los campos manualmente.')
     } finally {
       setAnalyzing(false)
     }
@@ -208,6 +210,18 @@ export default function ReviewReceipt() {
               <div>
                 <p className="font-semibold text-on-surface text-sm">Gemini IA leyendo el ticket...</p>
                 <p className="text-on-surface-variant text-xs">Extrayendo monto, proveedor, fecha y categoría</p>
+              </div>
+            </div>
+          )}
+
+          {aiError && (
+            <div className="bg-error-container/40 rounded-2xl p-4 mb-6 flex items-center gap-3 border border-error/20">
+              <div className="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-error">warning</span>
+              </div>
+              <div>
+                <p className="font-semibold text-on-surface text-sm">{aiError}</p>
+                <p className="text-on-surface-variant text-xs">Puedes llenar los campos y guardar igual</p>
               </div>
             </div>
           )}
