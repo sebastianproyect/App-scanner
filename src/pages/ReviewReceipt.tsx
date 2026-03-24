@@ -63,12 +63,33 @@ export default function ReviewReceipt() {
     analyzeWithAI()
   }, [imageData, categories])
 
+  async function compressImage(dataUrl: string): Promise<string> {
+    return new Promise(resolve => {
+      const img = new Image()
+      img.onload = () => {
+        const MAX = 1024
+        let { width, height } = img
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round(height * MAX / width); width = MAX }
+          else { width = Math.round(width * MAX / height); height = MAX }
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', 0.75))
+      }
+      img.src = dataUrl
+    })
+  }
+
   async function analyzeWithAI() {
     setAnalyzing(true)
     setAiError('')
     try {
+      const compressed = imageData ? await compressImage(imageData) : imageData
       const { data, error: fnError } = await supabase.functions.invoke('parse-receipt', {
-        body: { imageBase64: imageData }
+        body: { imageBase64: compressed }
       })
 
       if (fnError) throw new Error(fnError.message)
