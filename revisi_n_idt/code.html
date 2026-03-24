@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Review Receipt - IDT Ledger</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-secondary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-secondary-container": "#636262",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed-variant": "#004880",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "surface-tint": "#aa3600",
+                        "on-tertiary-container": "#fdfcff",
+                        "outline-variant": "#e5beb2",
+                        "inverse-primary": "#ffb59c",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "on-secondary-fixed-variant": "#474746",
+                        "on-background": "#281812",
+                        "on-error": "#ffffff",
+                        "surface-bright": "#fff8f6",
+                        "tertiary-fixed-dim": "#a1c9ff",
+                        "on-primary": "#ffffff",
+                        "outline": "#907065",
+                        "on-primary-fixed": "#390c00",
+                        "on-tertiary-fixed": "#001c37",
+                        "surface-container": "#ffe9e3",
+                        "primary-fixed-dim": "#ffb59c",
+                        "tertiary-fixed": "#d2e4ff",
+                        "surface-container-highest": "#fbdcd3",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-high": "#ffe2d9",
+                        "surface-variant": "#fbdcd3",
+                        "primary-fixed": "#ffdbcf",
+                        "inverse-on-surface": "#ffede8",
+                        "surface-dim": "#f2d4ca",
+                        "tertiary": "#005ea3",
+                        "secondary": "#5f5e5e",
+                        "secondary-fixed": "#e5e2e1",
+                        "on-tertiary": "#ffffff",
+                        "inverse-surface": "#3e2c26",
+                        "secondary-container": "#e2dfde",
+                        "background": "#fff8f6",
+                        "on-primary-fixed-variant": "#822700",
+                        "on-primary-container": "#fffbff",
+                        "on-surface-variant": "#5c4037",
+                        "primary": "#a63500",
+                        "on-error-container": "#93000a",
+                        "on-surface": "#281812",
+                        "surface-container-low": "#fff1ed",
+                        "surface": "#fff8f6",
+                        "primary-container": "#d04400",
+                        "tertiary-container": "#0077cd"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #fff8f6;
+            color: #281812;
+            -webkit-font-smoothing: antialiased;
+        }
+        .receipt-gradient {
+            background: linear-gradient(180deg, rgba(255, 248, 246, 0) 0%, rgba(255, 248, 246, 1) 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body selection:bg-surface-container-highest">
+<!-- TopAppBar (Immutable Logic) -->
+<header class="bg-[#fff8f6] dark:bg-[#1a110f] docked full-width top-0 sticky z-50 flex items-center justify-between px-6 py-4 w-full">
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center p-2 rounded-full hover:bg-[#fbdcd3]/50 transition-colors active:scale-95 duration-200 text-[#5c4037]">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<span class="font-manrope font-bold tracking-tight text-[#281812] dark:text-[#fbdcd3] text-xl">Review Receipt</span>
+</div>
+<div class="flex items-center">
+<img alt="IDT accounting logo" class="h-8 w-auto object-contain" data-alt="minimalist professional logo for an accounting firm with sharp geometric lines and deep orange branding" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2ontSQ7btJr4VQSXRYhFImKUjBT9EDxv4FrLWB_ug5xixKcx-0D48APAQSNyEZzuTjVkJkWBAoVqJe9ZyrIaytyOSQY2TMviuj-4Fh1NjyKiKM_1KpF8WBRcQiRHXxCI7ztxSfDQjPqXw1sMt5BlWi-fkdJ3_JvenDoP-v2PnQOWFzCUna4BUAH_cdJ0G4cRzoScqykRUtZyyYekXPIj0vzfDwxaBw-pKOwhsN3_usGe6YUe3prVJ1-NzDtHcPaQJdO0jOmr4qBu-"/>
+</div>
+</header>
+<main class="max-w-xl mx-auto px-6 pt-4 pb-32">
+<!-- Receipt Visual Canvas -->
+<div class="relative w-full aspect-[3/4] rounded-2xl overflow-hidden bg-surface-container-low mb-8 shadow-sm">
+<img alt="Scanned receipt detail" class="w-full h-full object-cover" data-alt="close up of a detailed paper merchant receipt with black ink text on white paper showing transaction items and totals" src="https://lh3.googleusercontent.com/aida-public/AB6AXuClqTjH61RmxqsIQe48pSaKl9HstCpApsUprbN651BFEIZ2_ieNWAGcAUaoDQAi5vePdsf3jJzScYLSNNU6rpkA7ke5B98N1rs6T8LvCDo3K_2EptAebyGbFPmfJhuRnWEv0-CSayZRqSD1KJcpVjzMnsc2axfGZX_GXXX0fi758HbzSAdUZHxpHkj73fb8h4SzD6DWHyACkQ_CBXwvpAIxSTvgcptNmXGPae2tTVVRZm_SDs4LTPvr4wdxI3jJkegNUsyDMStyu849"/>
+<div class="absolute inset-0 receipt-gradient"></div>
+<div class="absolute bottom-4 left-6">
+<span class="bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md">AI SCANNED</span>
+</div>
+</div>
+<!-- Extracted Data Grid (Editorial Style) -->
+<div class="space-y-8">
+<div class="flex flex-col gap-1">
+<label class="text-[0.6875rem] font-semibold text-on-surface-variant uppercase tracking-widest px-1">Vendor</label>
+<div class="flex items-center gap-4 bg-surface-container-low p-4 rounded-xl">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">storefront</span>
+</div>
+<div class="flex-1">
+<input class="w-full bg-transparent border-none p-0 focus:ring-0 font-headline font-bold text-xl text-on-surface" type="text" value="Apple Store"/>
+<p class="text-xs text-on-surface-variant/70">5th Avenue, New York</p>
+</div>
+<button class="text-on-surface-variant">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col gap-1">
+<label class="text-[0.6875rem] font-semibold text-on-surface-variant uppercase tracking-widest px-1">Date</label>
+<div class="bg-surface-container-low p-4 rounded-xl flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary text-sm">calendar_today</span>
+<input class="w-full bg-transparent border-none p-0 focus:ring-0 font-body font-semibold text-on-surface" type="text" value="Oct 24, 2023"/>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[0.6875rem] font-semibold text-on-surface-variant uppercase tracking-widest px-1">Category</label>
+<div class="bg-surface-container-low p-4 rounded-xl flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary text-sm">category</span>
+<select class="w-full bg-transparent border-none p-0 focus:ring-0 font-body font-semibold text-on-surface appearance-none">
+<option>Office Gear</option>
+<option>Travel</option>
+<option>Utilities</option>
+</select>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[0.6875rem] font-semibold text-on-surface-variant uppercase tracking-widest px-1">Total Amount</label>
+<div class="bg-surface-container-highest p-6 rounded-2xl flex justify-between items-baseline">
+<span class="text-primary font-headline font-extrabold text-4xl tracking-tighter">$1,299.00</span>
+<span class="text-on-surface-variant font-medium text-sm">USD</span>
+</div>
+</div>
+<!-- Deep Dive Info Area (Bento style) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-4 rounded-xl flex flex-col justify-between">
+<span class="text-[0.6875rem] font-semibold text-on-surface-variant uppercase tracking-widest mb-2">Tax (Estimated)</span>
+<p class="font-headline font-bold text-lg">$107.17</p>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl flex flex-col justify-between">
+<span class="text-[0.6875rem] font-semibold text-on-surface-variant uppercase tracking-widest mb-2">Payment Method</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">credit_card</span>
+<p class="font-headline font-bold text-lg">Visa •••• 4242</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Fixed Bottom Action Bar -->
+<div class="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-background via-background to-transparent pointer-events-none">
+<div class="max-w-xl mx-auto pointer-events-auto">
+<button class="w-full py-4 px-6 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white font-headline font-bold text-lg shadow-lg hover:opacity-95 transition-opacity active:scale-[0.98] duration-150 flex items-center justify-center gap-3">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">sync</span>
+                    Confirm &amp; Sync to Excel
+                </button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar Suppressed for Focused Transactional Task as per the "The UX Goal" mandate -->
+</body></html>

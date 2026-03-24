@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>IDT Accounting - Receipt Scanner</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-secondary": "#ffffff",
+              "error-container": "#ffdad6",
+              "on-secondary-container": "#636262",
+              "error": "#ba1a1a",
+              "on-tertiary-fixed-variant": "#004880",
+              "on-secondary-fixed": "#1c1b1b",
+              "surface-tint": "#aa3600",
+              "on-tertiary-container": "#fdfcff",
+              "outline-variant": "#e5beb2",
+              "inverse-primary": "#ffb59c",
+              "secondary-fixed-dim": "#c8c6c5",
+              "on-secondary-fixed-variant": "#474746",
+              "on-background": "#281812",
+              "on-error": "#ffffff",
+              "surface-bright": "#fff8f6",
+              "tertiary-fixed-dim": "#a1c9ff",
+              "on-primary": "#ffffff",
+              "outline": "#907065",
+              "on-primary-fixed": "#390c00",
+              "on-tertiary-fixed": "#001c37",
+              "surface-container": "#ffe9e3",
+              "primary-fixed-dim": "#ffb59c",
+              "tertiary-fixed": "#d2e4ff",
+              "surface-container-highest": "#fbdcd3",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-high": "#ffe2d9",
+              "surface-variant": "#fbdcd3",
+              "primary-fixed": "#ffdbcf",
+              "inverse-on-surface": "#ffede8",
+              "surface-dim": "#f2d4ca",
+              "tertiary": "#005ea3",
+              "secondary": "#5f5e5e",
+              "secondary-fixed": "#e5e2e1",
+              "on-tertiary": "#ffffff",
+              "inverse-surface": "#3e2c26",
+              "secondary-container": "#e2dfde",
+              "background": "#fff8f6",
+              "on-primary-fixed-variant": "#822700",
+              "on-primary-container": "#fffbff",
+              "on-surface-variant": "#5c4037",
+              "primary": "#a63500",
+              "on-error-container": "#93000a",
+              "on-surface": "#281812",
+              "surface-container-low": "#fff1ed",
+              "surface": "#fff8f6",
+              "primary-container": "#d04400",
+              "tertiary-container": "#0077cd"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .camera-overlay {
+        background: radial-gradient(circle, transparent 60%, rgba(0,0,0,0.8) 100%);
+      }
+      .guide-frame {
+        box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.6);
+      }
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-black font-body text-white overflow-hidden h-screen flex flex-col">
+<!-- Top Navigation Bar (Custom Contextual) -->
+<header class="flex items-center justify-between px-6 py-6 w-full z-50 absolute top-0">
+<button class="w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-black/60 transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+<div class="flex gap-4">
+<button class="w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-black/60 transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+</div>
+</header>
+<!-- Camera Viewport / Main Content -->
+<main class="relative flex-1 flex flex-col items-center justify-center overflow-hidden">
+<!-- Simulated Camera Feed Background -->
+<div class="absolute inset-0 z-0">
+<img alt="Top down view of a dark wooden desk with a white paper receipt and a pen" class="w-full h-full object-cover brightness-75 contrast-125" data-alt="Top down view of a dark wooden desk with a white paper receipt and a pen being captured by a camera lens with soft shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzIB37SXa6qNYeiopapQp9PbYC7qknFR4IO0SVlTHbuYOHjelpY6RZt0TTEHjN2eAQxdu3vd5ONghwZXEgAfLZV54ykogCtrm0ONGnKOv0pfsEz-zHTVilU0Knh5DfBurEnzq-gCjvWpsKzFZBjfeZGs97hwosD27jX1Ikb7lp0dLwTaao4Gp1ZAyqrVhL6_0P2wXGnMep6SMa1JQiGs53pgMLFgksxtOQxoGGwo9OSsMmNaSEASSvvQ_HhKEpCJsLr1nfK7vIK_yS"/>
+<div class="absolute inset-0 camera-overlay"></div>
+</div>
+<!-- Scanning Interface Overlay -->
+<div class="relative z-10 w-full max-w-md px-8 flex flex-col items-center">
+<!-- Guide Frame -->
+<div class="relative w-full aspect-[3/4] rounded-3xl guide-frame border-2 border-primary/40 flex items-center justify-center overflow-hidden transition-all duration-700">
+<!-- Corner Guides -->
+<div class="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-primary rounded-tl-3xl"></div>
+<div class="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-3xl"></div>
+<div class="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-3xl"></div>
+<div class="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-3xl"></div>
+<!-- Animated Scanning Line -->
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-60 animate-[pulse_2s_infinite]"></div>
+<!-- Helper Hint -->
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-4/5 h-4/5 border border-dashed border-white/20 rounded-xl"></div>
+</div>
+</div>
+<!-- Instruction Text -->
+<div class="mt-8 text-center space-y-2">
+<p class="text-lg font-headline font-bold text-white tracking-wide">Position receipt within the frame</p>
+<p class="text-sm text-white/60 font-medium">Scanning happens automatically when focused</p>
+</div>
+</div>
+</main>
+<!-- Bottom Controls -->
+<footer class="relative z-50 bg-black/40 backdrop-blur-2xl px-10 pt-8 pb-12 rounded-t-[2.5rem] flex items-center justify-between border-t border-white/10">
+<!-- Flash Toggle -->
+<div class="flex flex-col items-center gap-2 w-16">
+<button class="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all active:scale-90">
+<span class="material-symbols-outlined text-white" data-icon="flash_on">flash_on</span>
+</button>
+<span class="text-[10px] font-label uppercase tracking-widest text-white/50">Flash Off</span>
+</div>
+<!-- Capture Button -->
+<div class="relative flex items-center justify-center">
+<div class="absolute w-24 h-24 rounded-full border-2 border-primary opacity-30 animate-ping"></div>
+<button class="relative w-20 h-20 rounded-full bg-white p-1 shadow-2xl active:scale-95 transition-transform">
+<div class="w-full h-full rounded-full border-[3px] border-black/5 flex items-center justify-center">
+<div class="w-16 h-16 rounded-full bg-gradient-to-tr from-primary to-primary-container shadow-inner"></div>
+</div>
+</button>
+</div>
+<!-- Gallery/Recent -->
+<div class="flex flex-col items-center gap-2 w-16">
+<button class="w-12 h-12 rounded-xl overflow-hidden border-2 border-white/20 hover:border-primary transition-all active:scale-90">
+<img alt="Recent receipt thumbnail" class="w-full h-full object-cover" data-alt="Small square thumbnail of a blurred grocery receipt with red and black text" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrSNcOIt1lqhxVT60Y-H4c2iFZB7KeWtIKZb55tUXNfxZ9P7HCgb-AjRONhAv-BH02t0-zU0_3EP19wx7C94DxWsEYcnrZcYN4yI9zUEb9KXxenhAraLAUkubgomVZtgnuYYHXete5IbTwj4C5n7RflE1Uem4876ZWZbCmwuc8MgKSWgKqQrh7uVP9Tj17BgJSgm9V9vzxFlgZMwVX66M2d5TUJHsGdEFh9czC4xHGPvTbEIAO8mJoY2cLKxgUK7eDXO2TkaKNphE0"/>
+</button>
+<span class="text-[10px] font-label uppercase tracking-widest text-white/50">Gallery</span>
+</div>
+</footer>
+<!-- Smart Label Tooltip (Glassmorphism) -->
+<div class="absolute bottom-40 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+<div class="px-4 py-2 bg-primary/20 backdrop-blur-xl border border-primary/30 rounded-full flex items-center gap-2 shadow-xl">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="text-xs font-semibold text-primary uppercase tracking-tighter">AI Ready</span>
+</div>
+</div>
+</body></html>

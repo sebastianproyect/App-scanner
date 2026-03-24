@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>IDT Accounting - History &amp; Export</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-secondary": "#ffffff",
+              "error-container": "#ffdad6",
+              "on-secondary-container": "#636262",
+              "error": "#ba1a1a",
+              "on-tertiary-fixed-variant": "#004880",
+              "on-secondary-fixed": "#1c1b1b",
+              "surface-tint": "#aa3600",
+              "on-tertiary-container": "#fdfcff",
+              "outline-variant": "#e5beb2",
+              "inverse-primary": "#ffb59c",
+              "secondary-fixed-dim": "#c8c6c5",
+              "on-secondary-fixed-variant": "#474746",
+              "on-background": "#281812",
+              "on-error": "#ffffff",
+              "surface-bright": "#fff8f6",
+              "tertiary-fixed-dim": "#a1c9ff",
+              "on-primary": "#ffffff",
+              "outline": "#907065",
+              "on-primary-fixed": "#390c00",
+              "on-tertiary-fixed": "#001c37",
+              "surface-container": "#ffe9e3",
+              "primary-fixed-dim": "#ffb59c",
+              "tertiary-fixed": "#d2e4ff",
+              "surface-container-highest": "#fbdcd3",
+              "surface-container-lowest": "#ffffff",
+              "surface-container-high": "#ffe2d9",
+              "surface-variant": "#fbdcd3",
+              "primary-fixed": "#ffdbcf",
+              "inverse-on-surface": "#ffede8",
+              "surface-dim": "#f2d4ca",
+              "tertiary": "#005ea3",
+              "secondary": "#5f5e5e",
+              "secondary-fixed": "#e5e2e1",
+              "on-tertiary": "#ffffff",
+              "inverse-surface": "#3e2c26",
+              "secondary-container": "#e2dfde",
+              "background": "#fff8f6",
+              "on-primary-fixed-variant": "#822700",
+              "on-primary-container": "#fffbff",
+              "on-surface-variant": "#5c4037",
+              "primary": "#a63500",
+              "on-error-container": "#93000a",
+              "on-surface": "#281812",
+              "surface-container-low": "#fff1ed",
+              "surface": "#fff8f6",
+              "primary-container": "#d04400",
+              "tertiary-container": "#0077cd"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .editorial-gradient {
+            background: linear-gradient(135deg, #a63500 0%, #d04400 100%);
+        }
+        .glass-panel {
+            background-color: rgba(255, 241, 237, 0.7);
+            backdrop-filter: blur(24px);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fff8f6;
+            color: #281812;
+        }
+        h1, h2, h3, .brand-font {
+            font-family: 'Manrope', sans-serif;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="bg-[#fff8f6] dark:bg-[#1a110f] docked full-width top-0 sticky z-50">
+<div class="flex items-center justify-between px-6 py-4 w-full">
+<div class="flex items-center gap-3">
+<img alt="IDT Accounting Logo" class="h-8 w-auto object-contain rounded-lg" data-alt="professional minimalist logo for an accounting firm featuring sharp geometric lines in deep orange and white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7_HxmMLHqDTrFvmL9Jr6T-AjCLwHK4bp3mxxgKXnqQDza94d1HT2GnArSfzhlGOOirBxxtTUSKMLFPqtGBMuDWPFoGmNVf4WgXIPjhPmq-Nj9bE5pCIgxKlOq1cSpsGmS92raQ75BGNCJshszA7UesclCilgT-z17A24aiXOMLGbf4J5wHTRDBI6le5pfo-1FgWW_2FQdy061j__QgT2irg3zVHr49Yz7VoTXiWG74fkL3IjXxxKJPvdOtMTlec66J_7LNiWHmX6U"/>
+<span class="font-manrope font-bold tracking-tight text-[#281812] dark:text-[#fbdcd3] text-xl">History</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-[#fbdcd3]/50 transition-colors">
+<span class="material-symbols-outlined text-[#5c4037]">search</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border-2 border-primary">
+<img alt="User Profile" data-alt="close-up portrait of a professional man in a tailored suit with a neutral expression and soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQBfanugOYqe9lHtFyn9gjE0l3CgQd4bXsInytx4vtoGAw0P11VF7rSVlIBjvFNU1RBQV-bEUVwz2QDX7FldZWVlKhYr6mYhf30JtmgFP9so_X1OdF_tiweSG3HeQYfuILnio4r10eph98ZBsIMk7-AwAP6itl3DkTsooY9G4Um3wUSOyOYCASD7_LfCu6ut48AspS0F_xdwHjLGjxNFB5HkW3f1ojatvZfh9iOHdTWCAWvvclYOyP9jBPJt22G3pxxyc2v8Vmo8vm"/>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-5xl mx-auto px-6 mt-8">
+<!-- Search & Filter Section (Asymmetric Editorial Layout) -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
+<div class="lg:col-span-8">
+<div class="relative group">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant">search</span>
+<input class="w-full pl-12 pr-6 py-4 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-surface-tint/40 transition-all text-on-surface placeholder:text-on-surface-variant/60" placeholder="Search receipts, vendors, or amounts..." type="text"/>
+</div>
+<div class="flex flex-wrap gap-3 mt-6">
+<button class="px-5 py-2 rounded-full bg-surface-container-highest text-primary font-semibold text-sm transition-all hover:scale-105">All Time</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-low text-on-surface-variant font-semibold text-sm hover:bg-surface-container transition-all">Synced</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-low text-on-surface-variant font-semibold text-sm hover:bg-surface-container transition-all">Pending</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-low text-on-surface-variant font-semibold text-sm hover:bg-surface-container transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+                        More Filters
+                    </button>
+</div>
+</div>
+<!-- Connect to Excel Web Card (The "Deep Dive" Callout) -->
+<div class="lg:col-span-4">
+<div class="bg-surface-container-low p-6 rounded-2xl relative overflow-hidden group border border-outline-variant/15 h-full flex flex-col justify-between">
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 bg-on-tertiary-container rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary">table_chart</span>
+</div>
+<h3 class="font-headline font-bold text-on-surface">Excel Web</h3>
+</div>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">Automate your financial reporting by syncing directly with Microsoft Excel.</p>
+</div>
+<button class="editorial-gradient text-white w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 duration-200 shadow-lg shadow-primary/10">
+                        Connect to Excel Web
+                        <span class="material-symbols-outlined text-sm">open_in_new</span>
+</button>
+<div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-9xl">analytics</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Ledger Header -->
+<div class="flex items-end justify-between mb-6 px-2">
+<div>
+<span class="text-xs font-bold uppercase tracking-widest text-on-surface-variant/70 font-label">Financial Ledger</span>
+<h2 class="text-3xl font-headline font-extrabold text-on-surface mt-1">Recent Receipts</h2>
+</div>
+<button class="flex items-center gap-2 text-primary font-bold text-sm hover:underline">
+<span class="material-symbols-outlined text-lg">download</span>
+                Export CSV
+            </button>
+</div>
+<!-- Receipt History List (Tonal Transitions, No Horizontal Lines) -->
+<div class="space-y-4">
+<!-- Item 1: Synced -->
+<div class="group bg-surface-container-lowest hover:bg-surface-container-low transition-colors rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-xl bg-surface-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-3xl">restaurant</span>
+</div>
+<div>
+<h4 class="font-bold text-on-surface text-lg leading-tight">Blue Bayou Catering</h4>
+<div class="flex items-center gap-3 mt-1">
+<span class="text-xs font-medium text-on-surface-variant">Oct 24, 2023 • 14:30</span>
+<span class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded-md bg-tertiary/10 text-tertiary">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                                Synced
+                            </span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between md:justify-end gap-8">
+<div class="text-right">
+<span class="block text-xs text-on-surface-variant font-label mb-0.5">Tax: $12.40</span>
+<span class="block font-headline font-extrabold text-xl text-on-surface">$248.50</span>
+</div>
+<button class="p-2 rounded-full hover:bg-surface-container-highest transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Item 2: Pending -->
+<div class="group bg-surface-container-lowest hover:bg-surface-container-low transition-colors rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-xl bg-surface-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-3xl">local_gas_station</span>
+</div>
+<div>
+<h4 class="font-bold text-on-surface text-lg leading-tight">Shell Energy Center</h4>
+<div class="flex items-center gap-3 mt-1">
+<span class="text-xs font-medium text-on-surface-variant">Oct 23, 2023 • 09:12</span>
+<span class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded-md bg-secondary-container text-on-secondary-container">
+<span class="material-symbols-outlined text-[12px]">schedule</span>
+                                Pending
+                            </span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between md:justify-end gap-8">
+<div class="text-right">
+<span class="block text-xs text-on-surface-variant font-label mb-0.5">Tax: $4.12</span>
+<span class="block font-headline font-extrabold text-xl text-on-surface">$82.15</span>
+</div>
+<button class="p-2 rounded-full hover:bg-surface-container-highest transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Item 3: Synced -->
+<div class="group bg-surface-container-lowest hover:bg-surface-container-low transition-colors rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-xl bg-surface-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-3xl">cloud_queue</span>
+</div>
+<div>
+<h4 class="font-bold text-on-surface text-lg leading-tight">AWS Cloud Services</h4>
+<div class="flex items-center gap-3 mt-1">
+<span class="text-xs font-medium text-on-surface-variant">Oct 22, 2023 • 00:05</span>
+<span class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded-md bg-tertiary/10 text-tertiary">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                                Synced
+                            </span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between md:justify-end gap-8">
+<div class="text-right">
+<span class="block text-xs text-on-surface-variant font-label mb-0.5">Tax: $84.00</span>
+<span class="block font-headline font-extrabold text-xl text-on-surface">$1,450.00</span>
+</div>
+<button class="p-2 rounded-full hover:bg-surface-container-highest transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Item 4: Pending -->
+<div class="group bg-surface-container-lowest hover:bg-surface-container-low transition-colors rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-xl bg-surface-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-3xl">hotel</span>
+</div>
+<div>
+<h4 class="font-bold text-on-surface text-lg leading-tight">Marriott International</h4>
+<div class="flex items-center gap-3 mt-1">
+<span class="text-xs font-medium text-on-surface-variant">Oct 20, 2023 • 11:45</span>
+<span class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded-md bg-secondary-container text-on-secondary-container">
+<span class="material-symbols-outlined text-[12px]">schedule</span>
+                                Pending
+                            </span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between md:justify-end gap-8">
+<div class="text-right">
+<span class="block text-xs text-on-surface-variant font-label mb-0.5">Tax: $32.20</span>
+<span class="block font-headline font-extrabold text-xl text-on-surface">$644.00</span>
+</div>
+<button class="p-2 rounded-full hover:bg-surface-container-highest transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-[#fff8f6]/70 dark:bg-[#1a110f]/70 backdrop-blur-xl border-t border-[#e5beb2]/15 shadow-[0_-4px_24px_rgba(40,24,18,0.06)] z-50 rounded-t-[1.5rem]">
+<a class="flex flex-col items-center justify-center text-[#5c4037] dark:text-[#e5beb2] px-5 py-2 hover:opacity-80 transition-opacity active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[11px] font-semibold font-inter uppercase tracking-wider mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#fbdcd3] dark:bg-[#a63500]/30 text-[#a63500] dark:text-[#ffb4a1] rounded-2xl px-5 py-2 hover:opacity-80 transition-opacity active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="text-[11px] font-semibold font-inter uppercase tracking-wider mt-1">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#5c4037] dark:text-[#e5beb2] px-5 py-2 hover:opacity-80 transition-opacity active:scale-90 duration-150" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[11px] font-semibold font-inter uppercase tracking-wider mt-1">Settings</span>
+</a>
+</nav>
+</body></html>
