@@ -4,6 +4,32 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Category } from '../lib/types'
 
+interface AiResult {
+  vendor: string
+  date: string
+  amount: number
+  tax: number
+  payment_method: string
+  category: string
+  notes: string
+}
+
+const CATEGORY_MAP: Record<string, string> = {
+  'Oficina': 'Oficina',
+  'Office': 'Oficina',
+  'Transporte': 'Transporte',
+  'Transport': 'Transporte',
+  'Comida': 'Comida',
+  'Food': 'Comida',
+  'Servicios': 'Servicios',
+  'Services': 'Servicios',
+  'Papeleria': 'Papelería',
+  'Papelería': 'Papelería',
+  'Stationery': 'Papelería',
+  'Otros': 'Otros',
+  'Other': 'Otros',
+}
+
 export default function ReviewReceipt() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -21,12 +47,57 @@ export default function ReviewReceipt() {
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [analyzing, setAnalyzing] = useState(false)
+  const [aiDone, setAiDone] = useState(false)
 
   useEffect(() => {
     supabase.from('categories').select('*').then(({ data }) => {
       if (data) setCategories(data as Category[])
     })
   }, [])
+
+  // Run AI analysis automatically when image arrives
+  useEffect(() => {
+    if (!imageData || categories.length === 0) return
+    analyzeWithAI()
+  }, [imageData, categories])
+
+  async function analyzeWithAI() {
+    setAnalyzing(true)
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('parse-receipt', {
+        body: { imageBase64: imageData }
+      })
+
+      if (fnError) throw new Error(fnError.message)
+      if (!data?.data) throw new Error('Sin respuesta de la IA')
+
+      const result = data.data as AiResult
+
+      setVendor(result.vendor || '')
+      if (result.date) setDate(result.date)
+      if (result.amount) setAmount(String(result.amount))
+      if (result.tax) setTax(String(result.tax))
+      setPaymentMethod(result.payment_method || '')
+      setNotes(result.notes || '')
+
+      // Match AI category to our categories list
+      if (result.category) {
+        const normalized = CATEGORY_MAP[result.category] ?? result.category
+        const match = categories.find(c =>
+          c.name.toLowerCase() === normalized.toLowerCase()
+        )
+        if (match) setCategoryId(match.id)
+      }
+
+      setAiDone(true)
+    } catch (e) {
+      console.error('Error analizando ticket:', e)
+      // Don't show error to user — they can fill manually
+    } finally {
+      setAnalyzing(false)
+    }
+  }
 
   async function handleSave(e: FormEvent) {
     e.preventDefault()
@@ -36,17 +107,16 @@ export default function ReviewReceipt() {
 
     let image_url: string | null = null
 
-    // Upload image to Supabase Storage if present
     if (imageData) {
-      const blob = await (await fetch(imageData)).blob()
-      const fileName = `${user.id}/${Date.now()}.jpg`
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('receipt-images')
-        .upload(fileName, blob, { contentType: 'image/jpeg', upsert: false })
-      if (uploadError) {
-        console.error('Error subiendo imagen:', uploadError)
-      } else {
-        image_url = uploadData.path
+      try {
+        const blob = await (await fetch(imageData)).blob()
+        const fileName = `${user.id}/${Date.now()}.jpg`
+        const { data: uploadData } = await supabase.storage
+          .from('receipt-images')
+          .upload(fileName, blob, { contentType: 'image/jpeg', upsert: false })
+        if (uploadData) image_url = uploadData.path
+      } catch {
+        // Image upload failed, continue without it
       }
     }
 
@@ -66,7 +136,7 @@ export default function ReviewReceipt() {
     setSaving(false)
 
     if (insertError) {
-      setError('Error al guardar el ticket. Intenta de nuevo.')
+      setError('Error al guardar. Intenta de nuevo.')
       console.error(insertError)
     } else {
       navigate('/history')
@@ -95,24 +165,64 @@ export default function ReviewReceipt() {
 
       <form onSubmit={handleSave}>
         <main className="max-w-xl mx-auto px-6 pt-4 pb-36">
-          {/* Receipt Image Preview */}
-          <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden bg-surface-container-low mb-8 shadow-sm">
+
+          {/* Receipt Image */}
+          <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden bg-surface-container-low mb-6 shadow-sm">
             {imageData ? (
               <img src={imageData} alt="Ticket escaneado" className="w-full h-full object-contain" />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <div className="text-center space-y-3">
                   <span className="material-symbols-outlined text-6xl text-on-surface-variant/40">receipt_long</span>
-                  <p className="text-on-surface-variant/60 text-sm font-medium">Sin imagen</p>
+                  <p className="text-on-surface-variant/60 text-sm">Sin imagen</p>
                 </div>
               </div>
             )}
+
+            {/* AI Status Badge */}
             <div className="absolute bottom-4 left-6">
-              <span className="bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md">
-                TICKET ESCANEADO
-              </span>
+              {analyzing ? (
+                <div className="bg-black/50 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
+                  Analizando con IA...
+                </div>
+              ) : aiDone ? (
+                <div className="bg-primary/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
+                  IA completó el formulario
+                </div>
+              ) : (
+                <span className="bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md">
+                  TICKET ESCANEADO
+                </span>
+              )}
             </div>
           </div>
+
+          {/* AI analyzing overlay message */}
+          {analyzing && (
+            <div className="bg-surface-container-low rounded-2xl p-4 mb-6 flex items-center gap-3 border border-primary/10">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-primary animate-pulse">auto_awesome</span>
+              </div>
+              <div>
+                <p className="font-semibold text-on-surface text-sm">Gemini IA leyendo el ticket...</p>
+                <p className="text-on-surface-variant text-xs">Extrayendo monto, proveedor, fecha y categoría</p>
+              </div>
+            </div>
+          )}
+
+          {aiDone && (
+            <div className="bg-tertiary/5 rounded-2xl p-4 mb-6 flex items-center gap-3 border border-tertiary/15">
+              <div className="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-tertiary" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+              </div>
+              <div>
+                <p className="font-semibold text-on-surface text-sm">Información extraída automáticamente</p>
+                <p className="text-on-surface-variant text-xs">Revisa y corrige si es necesario antes de guardar</p>
+              </div>
+            </div>
+          )}
 
           {/* Form Fields */}
           <div className="space-y-6">
@@ -132,6 +242,7 @@ export default function ReviewReceipt() {
                   value={vendor}
                   onChange={e => setVendor(e.target.value)}
                   required
+                  disabled={analyzing}
                 />
               </div>
             </div>
@@ -150,6 +261,7 @@ export default function ReviewReceipt() {
                     value={date}
                     onChange={e => setDate(e.target.value)}
                     required
+                    disabled={analyzing}
                   />
                 </div>
               </div>
@@ -163,6 +275,7 @@ export default function ReviewReceipt() {
                     className="w-full bg-transparent border-none p-0 focus:ring-0 font-body font-semibold text-on-surface text-sm appearance-none"
                     value={categoryId}
                     onChange={e => setCategoryId(e.target.value ? Number(e.target.value) : '')}
+                    disabled={analyzing}
                   >
                     <option value="">Seleccionar...</option>
                     {categories.map(c => (
@@ -189,6 +302,7 @@ export default function ReviewReceipt() {
                   value={amount}
                   onChange={e => setAmount(e.target.value)}
                   required
+                  disabled={analyzing}
                 />
               </div>
             </div>
@@ -209,6 +323,7 @@ export default function ReviewReceipt() {
                     placeholder="0.00"
                     value={tax}
                     onChange={e => setTax(e.target.value)}
+                    disabled={analyzing}
                   />
                 </div>
               </div>
@@ -224,6 +339,7 @@ export default function ReviewReceipt() {
                     placeholder="Efectivo, tarjeta..."
                     value={paymentMethod}
                     onChange={e => setPaymentMethod(e.target.value)}
+                    disabled={analyzing}
                   />
                 </div>
               </div>
@@ -232,14 +348,15 @@ export default function ReviewReceipt() {
             {/* Notes */}
             <div className="flex flex-col gap-1">
               <label className="text-[0.6875rem] font-semibold text-on-surface-variant uppercase tracking-widest px-1">
-                Notas (opcional)
+                Descripción
               </label>
               <textarea
                 className="w-full bg-surface-container-low border-none p-4 rounded-xl focus:ring-2 focus:ring-surface-tint/40 transition-all text-on-surface placeholder:text-on-surface-variant/40 text-sm resize-none"
                 rows={2}
-                placeholder="Descripción adicional del gasto..."
+                placeholder="Descripción del gasto..."
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
+                disabled={analyzing}
               />
             </div>
 
@@ -254,16 +371,31 @@ export default function ReviewReceipt() {
 
         {/* Fixed Bottom Action */}
         <div className="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-background via-background/95 to-transparent">
-          <div className="max-w-xl mx-auto">
+          <div className="max-w-xl mx-auto flex gap-3">
+            {!analyzing && (
+              <button
+                type="button"
+                onClick={analyzeWithAI}
+                className="px-4 py-4 rounded-xl bg-surface-container-highest text-primary font-semibold flex items-center gap-2 active:scale-95 transition-transform"
+                title="Volver a analizar con IA"
+              >
+                <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
+              </button>
+            )}
             <button
               type="submit"
-              disabled={saving}
-              className="w-full py-4 px-6 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white font-headline font-bold text-lg shadow-lg hover:opacity-95 transition-opacity active:scale-[0.98] duration-150 flex items-center justify-center gap-3 disabled:opacity-60"
+              disabled={saving || analyzing}
+              className="flex-1 py-4 px-6 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white font-headline font-bold text-lg shadow-lg hover:opacity-95 transition-opacity active:scale-[0.98] duration-150 flex items-center justify-center gap-3 disabled:opacity-60"
             >
               {saving ? (
                 <>
                   <span className="material-symbols-outlined animate-spin">progress_activity</span>
                   Guardando...
+                </>
+              ) : analyzing ? (
+                <>
+                  <span className="material-symbols-outlined animate-pulse">auto_awesome</span>
+                  Analizando...
                 </>
               ) : (
                 <>
