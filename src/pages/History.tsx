@@ -28,6 +28,7 @@ export default function History() {
   const [receipts, setReceipts] = useState<Receipt[]>([])
   const [profilesMap, setProfilesMap] = useState<Record<string, Profile>>({})
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState('')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
@@ -38,6 +39,7 @@ export default function History() {
 
   async function fetchReceipts() {
     setLoading(true)
+    setFetchError('')
 
     let query = supabase
       .from('receipts')
@@ -48,15 +50,18 @@ export default function History() {
     if (!isAdmin) {
       const todayStart = new Date()
       todayStart.setHours(0, 0, 0, 0)
-      query = query.gte('created_at', todayStart.toISOString())
+      query = query
+        .eq('user_id', user!.id)
+        .gte('created_at', todayStart.toISOString())
     }
 
     const { data, error } = await query
 
-    if (!error && data) {
-      setReceipts(data as Receipt[])
-    } else if (error) {
+    if (error) {
       console.error('Error cargando recibos:', error.message)
+      setFetchError(`Error al cargar tickets: ${error.message}`)
+    } else if (data) {
+      setReceipts(data as Receipt[])
     }
 
     // Admin: also fetch all profiles to show submitter names
@@ -251,6 +256,14 @@ export default function History() {
             <span className="material-symbols-outlined text-on-surface-variant">refresh</span>
           </button>
         </div>
+
+        {/* Error display */}
+        {fetchError && (
+          <div className="bg-error-container/40 rounded-2xl p-4 mb-6 flex items-center gap-3 border border-error/20">
+            <span className="material-symbols-outlined text-error">error</span>
+            <p className="text-sm text-on-surface font-medium">{fetchError}</p>
+          </div>
+        )}
 
         {/* Receipt List */}
         {loading ? (
