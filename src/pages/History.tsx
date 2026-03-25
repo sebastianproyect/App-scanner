@@ -33,6 +33,7 @@ export default function History() {
   const [fetchError, setFetchError] = useState('')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user || !profile) return
@@ -86,6 +87,11 @@ export default function History() {
     const matchStatus = statusFilter === 'all' || r.status === statusFilter
     return matchSearch && matchStatus
   })
+
+  function getImageUrl(path: string): string {
+    const { data } = supabase.storage.from('receipt-images').getPublicUrl(path)
+    return data.publicUrl
+  }
 
   function formatDate(d: string) {
     return new Date(d).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -411,10 +417,21 @@ export default function History() {
                   className="group bg-surface-container-lowest hover:bg-surface-container-low transition-colors rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-xl bg-surface-container flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-primary text-2xl">
-                        {cat?.name ? (CATEGORY_ICONS[cat.name] ?? 'receipt') : 'receipt'}
-                      </span>
+                    <div
+                      className={`w-14 h-14 rounded-xl bg-surface-container flex items-center justify-center shrink-0 overflow-hidden ${r.image_url ? 'cursor-pointer ring-2 ring-transparent hover:ring-primary transition-all' : ''}`}
+                      onClick={() => r.image_url && setSelectedImage(getImageUrl(r.image_url))}
+                    >
+                      {r.image_url ? (
+                        <img
+                          src={getImageUrl(r.image_url)}
+                          alt="Ticket"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="material-symbols-outlined text-primary text-2xl">
+                          {cat?.name ? (CATEGORY_ICONS[cat.name] ?? 'receipt') : 'receipt'}
+                        </span>
+                      )}
                     </div>
                     <div>
                       <h4 className="font-bold text-on-surface text-base leading-tight">{r.vendor || '—'}</h4>
@@ -457,6 +474,38 @@ export default function History() {
           </div>
         )}
       </main>
+
+      {/* Image Lightbox */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-center justify-center p-6"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-lg w-full" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute -top-12 right-0 flex items-center gap-2 text-white/70 hover:text-white transition-colors font-semibold text-sm"
+            >
+              Cerrar <span className="material-symbols-outlined">close</span>
+            </button>
+            <img
+              src={selectedImage}
+              alt="Ticket"
+              className="w-full rounded-2xl shadow-2xl max-h-[80vh] object-contain"
+            />
+            <a
+              href={selectedImage}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 flex items-center justify-center gap-2 text-white/60 hover:text-white transition-colors text-sm"
+              onClick={e => e.stopPropagation()}
+            >
+              <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+              Ver tamaño completo
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Nav */}
       <nav className="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-[#fff8f6]/70 backdrop-blur-xl border-t border-[#e5beb2]/15 shadow-[0_-4px_24px_rgba(40,24,18,0.06)] z-50 rounded-t-[1.5rem]">
