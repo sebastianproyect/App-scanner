@@ -8,6 +8,7 @@ export default function Scanner() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [cameraError, setCameraError] = useState(false)
   const [flash, setFlash] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
 
   const capture = useCallback(() => {
     const imageSrc = webcamRef.current?.getScreenshot()
@@ -37,7 +38,10 @@ export default function Scanner() {
           <span className="material-symbols-outlined">close</span>
         </button>
         <div className="flex gap-4">
-          <button className="w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-black/60 transition-all active:scale-95">
+          <button
+            onClick={() => setShowHelp(true)}
+            className="w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-md text-white hover:bg-black/60 transition-all active:scale-95"
+          >
             <span className="material-symbols-outlined">help</span>
           </button>
         </div>
@@ -94,7 +98,20 @@ export default function Scanner() {
         {/* Flash Toggle */}
         <div className="flex flex-col items-center gap-2 w-16">
           <button
-            onClick={() => setFlash(f => !f)}
+            onClick={async () => {
+              try {
+                const stream = webcamRef.current?.video?.srcObject as MediaStream | null
+                const track = stream?.getVideoTracks()[0]
+                if (track && 'applyConstraints' in track) {
+                  const newFlash = !flash
+                  await (track as MediaStreamTrack & { applyConstraints: (c: object) => Promise<void> })
+                    .applyConstraints({ advanced: [{ torch: newFlash } as object] })
+                  setFlash(newFlash)
+                }
+              } catch {
+                setFlash(f => !f)
+              }
+            }}
             className={`w-12 h-12 flex items-center justify-center rounded-full transition-all active:scale-90 ${flash ? 'bg-yellow-400/30' : 'bg-white/10 hover:bg-white/20'}`}
           >
             <span className="material-symbols-outlined text-white">{flash ? 'flash_on' : 'flash_off'}</span>
@@ -136,6 +153,39 @@ export default function Scanner() {
           />
         </div>
       </footer>
+
+      {/* Help Modal */}
+      {showHelp && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-end justify-center"
+          onClick={() => setShowHelp(false)}>
+          <div className="bg-[#1a0e0a] rounded-t-[2rem] w-full max-w-lg p-8 pb-12 space-y-6"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="font-headline font-bold text-white text-xl">Cómo escanear</h3>
+              <button onClick={() => setShowHelp(false)}
+                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/70">
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            {[
+              { icon: 'light_mode', title: 'Buena iluminación', desc: 'Busca una superficie bien iluminada. Evita sombras sobre el ticket.' },
+              { icon: 'straighten', title: 'Coloca bien el ticket', desc: 'Alinea el ticket dentro del marco. Que todo el texto quede visible.' },
+              { icon: 'texture', title: 'Tickets arrugados', desc: 'Estira el ticket lo máximo posible. La IA puede leer texto aunque esté doblado.' },
+              { icon: 'photo_library', title: 'Usa la galería', desc: 'Si ya tienes una foto del ticket, usa el botón de galería en lugar de la cámara.' },
+            ].map(tip => (
+              <div key={tip.icon} className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-primary text-[20px]">{tip.icon}</span>
+                </div>
+                <div>
+                  <p className="font-semibold text-white text-sm">{tip.title}</p>
+                  <p className="text-white/50 text-xs mt-0.5">{tip.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* AI Ready Badge */}
       <div className="absolute bottom-40 left-1/2 -translate-x-1/2 z-50 pointer-events-none">

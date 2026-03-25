@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { supabase } from '../lib/supabase'
@@ -199,31 +199,188 @@ export default function History() {
     doc.save(`IDT-Informe-${new Date().toISOString().split('T')[0]}.pdf`)
   }
 
-  function exportToExcel() {
-    const rows = filtered.map(r => ({
-      'Empleado': isAdmin ? (profilesMap[r.user_id]?.full_name || r.user_id.slice(0, 8)) : undefined,
-      'Proveedor': r.vendor,
-      'Fecha': r.date,
-      'Monto': r.amount,
-      'IVA': r.tax,
-      'Categoría': (r.categories as { name: string } | null)?.name ?? '',
-      'Método de pago': r.payment_method,
-      'Estado': STATUS_LABELS[r.status]?.label ?? r.status,
-      'Notas': r.notes,
-      'Registrado': new Date(r.created_at).toLocaleDateString('es-ES'),
-    }))
+  async function exportToExcel() {
+    const wb = new ExcelJS.Workbook()
+    wb.creator = 'IDT Ledger'
+    wb.created = new Date()
 
-    // Remove 'Empleado' column for non-admin
-    const finalRows = isAdmin ? rows : rows.map(({ Empleado: _, ...rest }) => rest)
+    const ws = wb.addWorksheet('Tickets IDT', {
+      pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1 },
+    })
 
-    const ws = XLSX.utils.json_to_sheet(finalRows)
-    ws['!cols'] = isAdmin
-      ? [{ wch: 18 }, { wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 30 }, { wch: 14 }]
-      : [{ wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 30 }, { wch: 14 }]
+    const ORANGE = 'FFA63500'
+    const ORANGE_LIGHT = 'FFFFF0EB'
+    const DARK = 'FF281812'
+    const GRAY = 'FF5C4037'
+    const WHITE = 'FFFFFFFF'
+    const STATUS_COLORS: Record<string, string> = {
+      pending: 'FFFFF3CD',
+      synced:  'FFD4EDDA',
+      flagged: 'FFF8D7DA',
+    }
 
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Tickets IDT')
-    XLSX.writeFile(wb, `IDT-Gastos-${new Date().toISOString().split('T')[0]}.xlsx`)
+    const today = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
+    const totalAmount = filtered.reduce((s, r) => s + Number(r.amount), 0)
+    const totalTax    = filtered.reduce((s, r) => s + Number(r.tax), 0)
+    const colCount    = isAdmin ? 9 : 8
+
+    // ── Row 1: Title banner ──────────────────────────────────────────────────
+    ws.mergeCells(1, 1, 1, colCount)
+    const titleCell = ws.getCell('A1')
+    titleCell.value = '  INDET Group — Informe de Gastos'
+    titleCell.font = { bold: true, size: 16, color: { argb: WHITE }, name: 'Calibri' }
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: ORANGE } }
+    titleCell.alignment = { vertical: 'middle', horizontal: 'left' }
+    ws.getRow(1).height = 36
+
+    // ── Row 2: Subtitle ──────────────────────────────────────────────────────
+    ws.mergeCells(2, 1, 2, colCount)
+    const subCell = ws.getCell('A2')
+    subCell.value = `  Generado el ${today}${isAdmin ? '  ·  Vista administrador — todos los empleados' : ''}`
+    subCell.font = { size: 10, color: { argb: 'FFFFFFFF' }, italic: true }
+    subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7A2600' } }
+    subCell.alignment = { vertical: 'middle', horizontal: 'left' }
+    ws.getRow(2).height = 22
+
+    // ── Row 3: Summary cards ─────────────────────────────────────────────────
+    ws.mergeCells(3, 1, 3, colCount)
+    const summaryCell = ws.getCell('A3')
+    summaryCell.value = `  TOTAL GASTOS: ${formatCurrency(totalAmount)}     TOTAL IVA: ${formatCurrency(totalTax)}     TICKETS: ${filtered.length}     PENDIENTES: ${filtered.filter(r => r.status === 'pending').length}`
+    summaryCell.font = { bold: true, size: 11, color: { argb: ORANGE } }
+    summaryCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: ORANGE_LIGHT } }
+    summaryCell.alignment = { vertical: 'middle', horizontal: 'left' }
+    ws.getRow(3).height = 28
+
+    // ── Row 4: Empty spacer ──────────────────────────────────────────────────
+    ws.getRow(4).height = 6
+
+    // ── Row 5: Column headers ────────────────────────────────────────────────
+    const headers = [
+      ...(isAdmin ? ['Empleado'] : []),
+      'Proveedor', 'Fecha', 'Categoría', 'Método de pago', 'IVA (€)', 'Total (€)', 'Estado', 'Notas',
+    ]
+    const headerRow = ws.getRow(5)
+    headers.forEach((h, i) => {
+      const cell = headerRow.getCell(i + 1)
+      cell.value = h
+      cell.font = { bold: true, color: { argb: WHITE }, size: 11, name: 'Calibri' }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: ORANGE } }
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: false }
+      cell.border = {
+        bottom: { style: 'medium', color: { argb: 'FF7A2600' } },
+      }
+    })
+    headerRow.height = 28
+
+    // ── Rows 6+: Data ────────────────────────────────────────────────────────
+    filtered.forEach((r, idx) => {
+      const cat = (r.categories as { name: string } | null)?.name ?? '—'
+      const st  = STATUS_LABELS[r.status]?.label ?? r.status
+      const isEven = idx % 2 === 0
+      const bgColor = isEven ? 'FFFFFFFF' : 'FFFFF8F6'
+
+      const rowData = [
+        ...(isAdmin ? [profilesMap[r.user_id]?.full_name || '—'] : []),
+        r.vendor || '—',
+        r.date,
+        cat,
+        r.payment_method || '—',
+        r.tax,
+        r.amount,
+        st,
+        r.notes || '',
+      ]
+
+      const dataRow = ws.getRow(6 + idx)
+      rowData.forEach((val, i) => {
+        const cell = dataRow.getCell(i + 1)
+        cell.value = val
+        cell.font = { size: 10, color: { argb: DARK } }
+        cell.alignment = { vertical: 'middle', horizontal: i >= (isAdmin ? 4 : 3) && i <= (isAdmin ? 5 : 4) ? 'right' : 'left' }
+
+        // Status column: colored background
+        const statusCol = isAdmin ? 7 : 6
+        if (i + 1 === statusCol) {
+          const sc = STATUS_COLORS[r.status] ?? STATUS_COLORS.pending
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: sc } }
+          cell.font = { bold: true, size: 10, color: { argb: GRAY } }
+          cell.alignment = { horizontal: 'center', vertical: 'middle' }
+        } else {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } }
+        }
+
+        // Currency columns
+        const amountCol  = isAdmin ? 6 : 5
+        const taxCol     = isAdmin ? 5 : 4
+        if (i + 1 === amountCol || i + 1 === taxCol) {
+          cell.numFmt = '#,##0.00 "€"'
+          cell.font = { bold: i + 1 === amountCol, size: 10, color: { argb: i + 1 === amountCol ? ORANGE : GRAY } }
+        }
+
+        cell.border = {
+          bottom: { style: 'thin', color: { argb: 'FFEDDDD8' } },
+        }
+      })
+      dataRow.height = 22
+    })
+
+    // ── Totals row ───────────────────────────────────────────────────────────
+    const totalRow = ws.getRow(6 + filtered.length)
+    const amountColIdx = isAdmin ? 6 : 5
+    const taxColIdx    = isAdmin ? 5 : 4
+
+    ws.mergeCells(6 + filtered.length, 1, 6 + filtered.length, taxColIdx - 1)
+    const totalLabelCell = totalRow.getCell(1)
+    totalLabelCell.value = 'TOTAL'
+    totalLabelCell.font = { bold: true, size: 11, color: { argb: WHITE } }
+    totalLabelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: ORANGE } }
+    totalLabelCell.alignment = { horizontal: 'right', vertical: 'middle' }
+
+    const taxTotalCell = totalRow.getCell(taxColIdx)
+    taxTotalCell.value = totalTax
+    taxTotalCell.numFmt = '#,##0.00 "€"'
+    taxTotalCell.font = { bold: true, size: 11, color: { argb: WHITE } }
+    taxTotalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: ORANGE } }
+    taxTotalCell.alignment = { horizontal: 'right', vertical: 'middle' }
+
+    const amountTotalCell = totalRow.getCell(amountColIdx)
+    amountTotalCell.value = totalAmount
+    amountTotalCell.numFmt = '#,##0.00 "€"'
+    amountTotalCell.font = { bold: true, size: 13, color: { argb: WHITE } }
+    amountTotalCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: ORANGE } }
+    amountTotalCell.alignment = { horizontal: 'right', vertical: 'middle' }
+
+    // Fill remaining total cells orange
+    for (let c = amountColIdx + 1; c <= colCount; c++) {
+      const cell = totalRow.getCell(c)
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: ORANGE } }
+    }
+    totalRow.height = 28
+
+    // ── Column widths ────────────────────────────────────────────────────────
+    const colWidths = isAdmin
+      ? [18, 28, 13, 16, 16, 10, 12, 12, 35]
+      : [28, 13, 16, 16, 10, 12, 12, 35]
+    colWidths.forEach((w, i) => { ws.getColumn(i + 1).width = w })
+
+    // ── Footer row ───────────────────────────────────────────────────────────
+    const footerRowIdx = 7 + filtered.length
+    ws.mergeCells(footerRowIdx, 1, footerRowIdx, colCount)
+    const footerCell = ws.getCell(`A${footerRowIdx}`)
+    footerCell.value = `IDT Ledger — INDET Group · Informe confidencial · ${today}`
+    footerCell.font = { size: 8, italic: true, color: { argb: 'FFAAAAAA' } }
+    footerCell.alignment = { horizontal: 'center' }
+    ws.getRow(footerRowIdx).height = 18
+
+    // ── Download ─────────────────────────────────────────────────────────────
+    const buffer = await wb.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `IDT-Informe-${new Date().toISOString().split('T')[0]}.xlsx`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   return (

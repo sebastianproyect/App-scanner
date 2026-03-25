@@ -332,7 +332,7 @@ export default function ReviewReceipt() {
                 Monto Total
               </label>
               <div className="bg-surface-container-highest p-6 rounded-2xl flex items-baseline gap-3 focus-within:ring-2 focus-within:ring-surface-tint/40 transition-all">
-                <span className="text-primary font-headline font-extrabold text-3xl">$</span>
+                <span className="text-primary font-headline font-extrabold text-3xl">€</span>
                 <input
                   className="flex-1 bg-transparent border-none p-0 focus:ring-0 font-headline font-extrabold text-4xl text-primary tracking-tighter placeholder:text-primary/30"
                   type="number"
