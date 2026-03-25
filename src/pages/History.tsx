@@ -39,10 +39,17 @@ export default function History() {
   async function fetchReceipts() {
     setLoading(true)
 
-    const query = supabase
+    let query = supabase
       .from('receipts')
       .select('*, categories(id, name, icon)')
-      .order('created_at', { ascending: false })   // newest first
+      .order('created_at', { ascending: false })
+
+    // Employee: only sees their own tickets from today
+    if (!isAdmin) {
+      const todayStart = new Date()
+      todayStart.setHours(0, 0, 0, 0)
+      query = query.gte('created_at', todayStart.toISOString())
+    }
 
     const { data, error } = await query
 
@@ -227,9 +234,14 @@ export default function History() {
           <div>
             <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant/70 font-label">
               {filtered.length} ticket{filtered.length !== 1 ? 's' : ''}
-              {isAdmin && receipts.length > 0 && ` · ${[...new Set(receipts.map(r => r.user_id))].length} empleado(s)`}
+              {isAdmin
+                ? receipts.length > 0 && ` · ${[...new Set(receipts.map(r => r.user_id))].length} empleado(s)`
+                : ` · ${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}`
+              }
             </span>
-            <h2 className="text-3xl font-headline font-extrabold text-on-surface mt-1">Tickets recientes</h2>
+            <h2 className="text-3xl font-headline font-extrabold text-on-surface mt-1">
+              {isAdmin ? 'Todos los tickets' : 'Tus envíos de hoy'}
+            </h2>
           </div>
           <button
             onClick={fetchReceipts}
@@ -251,14 +263,16 @@ export default function History() {
           <div className="text-center py-20">
             <span className="material-symbols-outlined text-6xl text-on-surface-variant/30">receipt_long</span>
             <p className="text-on-surface-variant mt-4 font-medium">
-              {receipts.length === 0 ? 'Aún no hay tickets registrados' : 'Sin resultados para tu búsqueda'}
+              {receipts.length === 0
+                ? isAdmin ? 'Aún no hay tickets registrados' : 'No has enviado ningún ticket hoy'
+                : 'Sin resultados para tu búsqueda'}
             </p>
             {receipts.length === 0 && (
               <button
                 onClick={() => navigate('/scanner')}
                 className="mt-6 px-6 py-3 bg-primary text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
               >
-                Escanear primer ticket
+                {isAdmin ? 'Escanear primer ticket' : 'Escanear ticket'}
               </button>
             )}
           </div>
