@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IDT Ledger — Propuesta Interna</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --primary: #a63500;
+    --primary-light: #fbdcd3;
+    --dark: #281812;
+    --muted: #5c4037;
+    --bg: #fff8f6;
+    --white: #ffffff;
+    --border: #e5beb2;
+    --success: #2e7d32;
+    --success-bg: #e8f5e9;
+  }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; color: var(--dark); }
+
+  /* PRINT */
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; margin: 0; border-radius: 0; page-break-after: always; }
+    .page:last-child { page-break-after: avoid; }
+    .no-print { display: none; }
+  }
+
+  /* NAV */
+  .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(40,24,18,0.95); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: space-between; padding: 12px 32px; }
+  .nav-logo { color: white; font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px; }
+  .nav-logo span { background: var(--primary); color: white; padding: 4px 10px; border-radius: 6px; font-size: 13px; }
+  .nav-btn { background: var(--primary); color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+
+  /* WRAPPER */
+  .wrapper { max-width: 900px; margin: 0 auto; padding: 80px 20px 40px; display: flex; flex-direction: column; gap: 24px; }
+
+  /* PAGE */
+  .page { background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(40,24,18,0.10); }
+
+  /* ── COVER ── */
+  .cover { background: linear-gradient(135deg, #281812 0%, #a63500 100%); color: white; padding: 64px 56px; position: relative; overflow: hidden; }
+  .cover::before { content: ''; position: absolute; top: -80px; right: -80px; width: 300px; height: 300px; border-radius: 50%; background: rgba(255,255,255,0.04); }
+  .cover::after { content: ''; position: absolute; bottom: -60px; left: -60px; width: 200px; height: 200px; border-radius: 50%; background: rgba(255,255,255,0.03); }
+  .cover-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 32px; }
+  .cover h1 { font-size: 42px; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+  .cover h1 em { font-style: normal; color: #fbdcd3; }
+  .cover p { font-size: 16px; color: rgba(255,255,255,0.75); max-width: 520px; line-height: 1.7; margin-bottom: 40px; }
+  .cover-meta { display: flex; gap: 40px; flex-wrap: wrap; }
+  .cover-meta-item { }
+  .cover-meta-item .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+  .cover-meta-item .value { font-size: 15px; font-weight: 600; color: white; }
+  .cover-logo { position: absolute; top: 56px; right: 56px; width: 72px; height: 72px; background: rgba(255,255,255,0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; color: white; }
+
+  /* SECTION HEADER */
+  .section-header { background: var(--bg); border-bottom: 1px solid var(--border); padding: 28px 40px; display: flex; align-items: center; gap: 14px; }
+  .section-number { width: 32px; height: 32px; background: var(--primary); color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .section-header h2 { font-size: 20px; font-weight: 700; color: var(--dark); }
+  .section-header p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  /* CONTENT */
+  .content { padding: 36px 40px; }
+
+  /* PROBLEM / SOLUTION */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .box { border-radius: 12px; padding: 24px; }
+  .box.problem { background: #fff3f0; border: 1px solid #ffcdd2; }
+  .box.solution { background: #e8f5e9; border: 1px solid #c8e6c9; }
+  .box h3 { font-size: 14px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .box.problem h3 { color: #c62828; }
+  .box.solution h3 { color: #2e7d32; }
+  .box ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .box ul li { font-size: 13px; color: #555; display: flex; align-items: flex-start; gap: 8px; line-height: 1.5; }
+  .box ul li::before { content: attr(data-icon); flex-shrink: 0; margin-top: 1px; }
+
+  /* FEATURES GRID */
+  .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .feature-card { border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: border-color 0.2s; }
+  .feature-card:hover { border-color: var(--primary); }
+  .feature-icon { width: 40px; height: 40px; background: var(--primary-light); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 12px; }
+  .feature-card h4 { font-size: 13px; font-weight: 700; color: var(--dark); margin-bottom: 6px; }
+  .feature-card p { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  /* ROLES */
+  .roles-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .role-card { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+  .role-header { padding: 16px 20px; display: flex; align-items: center; gap: 10px; }
+  .role-header.admin { background: var(--primary); color: white; }
+  .role-header.employee { background: var(--dark); color: white; }
+  .role-header h3 { font-size: 14px; font-weight: 700; }
+  .role-header span { font-size: 18px; }
+  .role-body { padding: 20px; background: var(--bg); }
+  .role-body ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .role-body ul li { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .role-body ul li::before { content: '✓'; color: var(--primary); font-weight: 700; }
+
+  /* FLOW */
+  .flow { display: flex; align-items: flex-start; gap: 0; overflow-x: auto; padding-bottom: 8px; }
+  .flow-step { flex: 1; min-width: 120px; text-align: center; position: relative; }
+  .flow-step:not(:last-child)::after { content: '→'; position: absolute; right: -10px; top: 18px; font-size: 20px; color: var(--border); z-index: 1; }
+  .flow-circle { width: 48px; height: 48px; border-radius: 50%; background: var(--primary-light); border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 0 auto 10px; }
+  .flow-step h4 { font-size: 12px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+  .flow-step p { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  /* TECH STACK */
+  .tech-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .tech-item { border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; }
+  .tech-item .logo { font-size: 28px; margin-bottom: 8px; }
+  .tech-item h4 { font-size: 12px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+  .tech-item p { font-size: 11px; color: var(--muted); }
+
+  /* COST TABLE */
+  .cost-table { width: 100%; border-collapse: collapse; }
+  .cost-table th { background: var(--dark); color: white; padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+  .cost-table th:last-child { text-align: right; }
+  .cost-table td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .cost-table td:last-child { text-align: right; font-weight: 700; }
+  .cost-table tr:last-child td { border-bottom: none; }
+  .cost-table .total-row td { background: var(--primary-light); color: var(--primary); font-weight: 700; font-size: 14px; }
+  .cost-table .free { color: var(--success); font-weight: 700; }
+
+  /* COMPARISON */
+  .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .comp-card { border-radius: 12px; overflow: hidden; border: 2px solid var(--border); }
+  .comp-card.ours { border-color: var(--primary); }
+  .comp-header { padding: 16px 20px; }
+  .comp-card.ours .comp-header { background: var(--primary); color: white; }
+  .comp-card.market .comp-header { background: #f5f5f5; color: var(--muted); }
+  .comp-header h3 { font-size: 15px; font-weight: 700; }
+  .comp-header .price { font-size: 26px; font-weight: 800; margin-top: 6px; }
+  .comp-header .price-sub { font-size: 12px; opacity: 0.8; }
+  .comp-body { padding: 20px; background: white; }
+  .comp-body ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .comp-body ul li { font-size: 13px; color: #555; display: flex; align-items: center; gap: 8px; }
+  .comp-body ul li.yes::before { content: '✓'; color: var(--success); font-weight: 700; }
+  .comp-body ul li.no::before { content: '✗'; color: #e53935; font-weight: 700; }
+
+  /* INVESTMENT */
+  .investment-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .inv-card { border-radius: 12px; padding: 24px; text-align: center; }
+  .inv-card.dev { background: var(--primary-light); border: 1px solid var(--border); }
+  .inv-card.infra { background: #e8f5e9; border: 1px solid #c8e6c9; }
+  .inv-card.maint { background: #e3f2fd; border: 1px solid #bbdefb; }
+  .inv-card .ico { font-size: 32px; margin-bottom: 12px; }
+  .inv-card h3 { font-size: 13px; font-weight: 700; color: var(--dark); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .inv-card .amount { font-size: 28px; font-weight: 800; color: var(--primary); }
+  .inv-card.infra .amount { color: var(--success); }
+  .inv-card.maint .amount { color: #1565c0; }
+  .inv-card .amount-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .inv-card p { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.6; }
+
+  /* ROADMAP */
+  .roadmap { display: flex; flex-direction: column; gap: 16px; }
+  .roadmap-item { display: flex; gap: 20px; align-items: flex-start; }
+  .roadmap-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--primary); flex-shrink: 0; margin-top: 5px; position: relative; }
+  .roadmap-dot::after { content: ''; position: absolute; top: 14px; left: 6px; width: 2px; height: calc(100% + 14px); background: var(--border); }
+  .roadmap-item:last-child .roadmap-dot::after { display: none; }
+  .roadmap-content h4 { font-size: 14px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+  .roadmap-content p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .roadmap-badge { display: inline-block; background: var(--primary-light); color: var(--primary); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-bottom: 6px; }
+
+  /* SECURITY */
+  .security-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .sec-item { background: var(--bg); border-radius: 10px; padding: 20px; border: 1px solid var(--border); }
+  .sec-item .icon { font-size: 24px; margin-bottom: 10px; }
+  .sec-item h4 { font-size: 13px; font-weight: 700; color: var(--dark); margin-bottom: 6px; }
+  .sec-item p { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  /* CLOSING */
+  .closing { background: linear-gradient(135deg, #281812, #a63500); color: white; padding: 56px 40px; text-align: center; }
+  .closing h2 { font-size: 28px; font-weight: 800; margin-bottom: 12px; }
+  .closing p { font-size: 15px; color: rgba(255,255,255,0.75); max-width: 500px; margin: 0 auto 32px; line-height: 1.7; }
+  .closing-meta { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; }
+  .closing-meta-item .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+  .closing-meta-item .value { font-size: 15px; font-weight: 600; }
+
+  /* HIGHLIGHT */
+  .highlight { background: var(--primary-light); border-left: 4px solid var(--primary); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 20px 0; }
+  .highlight p { font-size: 13px; color: var(--dark); line-height: 1.7; }
+
+  /* PAGE LABEL */
+  .page-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; padding: 6px 40px; background: var(--bg); border-top: 1px solid var(--border); text-align: right; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div class="nav no-print">
+  <div class="nav-logo">
+    <span>IDT</span>
+    IDT Ledger — Propuesta Interna
+  </div>
+  <button class="nav-btn" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+</div>
+
+<div class="wrapper">
+
+  <!-- ═══════════════════════════════════════════
+       1. PORTADA
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="cover">
+      <div class="cover-logo">IDT</div>
+      <div class="cover-badge">📋 Propuesta de proyecto interno</div>
+      <h1>IDT Ledger<br/><em>Gestión digital de gastos</em></h1>
+      <p>Solución interna para el registro, escaneo inteligente y control de tickets de gasto empresarial, desarrollada a medida para INDET Group.</p>
+      <div class="cover-meta">
+        <div class="cover-meta-item">
+          <div class="label">Fecha</div>
+          <div class="value">Marzo 2026</div>
+        </div>
+        <div class="cover-meta-item">
+          <div class="label">Versión</div>
+          <div class="value">1.0 — Producción</div>
+        </div>
+        <div class="cover-meta-item">
+          <div class="label">Destinatario</div>
+          <div class="value">INDET Group — Dirección</div>
+        </div>
+        <div class="cover-meta-item">
+          <div class="label">Estado</div>
+          <div class="value">✅ Aplicación en funcionamiento</div>
+        </div>
+      </div>
+    </div>
+    <div class="page-label">IDT Ledger · Propuesta Interna · Confidencial</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       2. PROBLEMA Y SOLUCIÓN
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="section-header">
+      <div class="section-number">1</div>
+      <div>
+        <h2>El problema que resolvemos</h2>
+        <p>Situación actual vs solución propuesta</p>
+      </div>
+    </div>
+    <div class="content">
+      <div class="two-col">
+        <div class="box problem">
+          <h3>⚠️ Situación actual</h3>
+          <ul>
+            <li data-icon="📄">Tickets en papel que se pierden o deterioran</li>
+            <li data-icon="⏳">Empleados transcriben gastos manualmente en Excel</li>
+            <li data-icon="🔍">Difícil auditar quién gastó qué y cuándo</li>
+            <li data-icon="📧">Proceso de reembolso lento y sin trazabilidad</li>
+            <li data-icon="❌">Sin clasificación automática por categoría</li>
+            <li data-icon="📊">Informes manuales que consumen horas de trabajo</li>
+          </ul>
+        </div>
+        <div class="box solution">
+          <h3>✅ Con IDT Ledger</h3>
+          <ul>
+            <li data-icon="📸">Escaneo con la cámara del móvil en segundos</li>
+            <li data-icon="🤖">IA extrae proveedor, fecha, monto e IVA automáticamente</li>
+            <li data-icon="👁️">Administrador ve todos los gastos en tiempo real</li>
+            <li data-icon="⚡">Empleado confirma envío y queda registrado</li>
+            <li data-icon="🏷️">Categorización automática (Transporte, Comida, Oficina…)</li>
+            <li data-icon="📥">Exportación a Excel y PDF en un clic</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="highlight" style="margin-top: 24px;">
+        <p>💡 <strong>Estimación de ahorro:</strong> Si cada empleado dedica 15 minutos/semana a gestionar tickets manualmente, una empresa de 20 personas pierde <strong>~100 horas/mes</strong>. IDT Ledger reduce ese tiempo a menos de 2 minutos por ticket.</p>
+      </div>
+    </div>
+    <div class="page-label">IDT Ledger · Propuesta Interna · Confidencial</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       3. FUNCIONALIDADES
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="section-header">
+      <div class="section-number">2</div>
+      <div>
+        <h2>Funcionalidades de la aplicación</h2>
+        <p>Todo lo que incluye la versión actual en producción</p>
+      </div>
+    </div>
+    <div class="content">
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">📸</div>
+          <h4>Escáner de cámara</h4>
+          <p>Captura tickets directamente con la cámara del móvil. Compatible con Android e iOS.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <h4>IA con Gemini</h4>
+          <p>Extracción automática de datos: proveedor, fecha, importe total, IVA y categoría.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📝</div>
+          <h4>Revisión manual</h4>
+          <p>El empleado confirma o corrige los datos antes de guardar. Control total.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👥</div>
+          <h4>Sistema de roles</h4>
+          <p>Administrador ve todos los gastos. Empleado solo ve sus envíos del día.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h4>Dashboard en vivo</h4>
+          <p>Resumen de gastos del mes, tickets pendientes y últimas transacciones.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔍</div>
+          <h4>Historial y filtros</h4>
+          <p>Buscar por proveedor, monto o estado. Filtrar por pendiente, guardado o en revisión.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📄</div>
+          <h4>Informe PDF</h4>
+          <p>Genera un PDF profesional con cabecera, resumen de totales e IVA y tabla detallada.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📥</div>
+          <h4>Exportar Excel</h4>
+          <p>Descarga el listado completo de tickets en .xlsx con columna de empleado.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h4>Acceso seguro</h4>
+          <p>Login con usuario y contraseña. Sesiones protegidas. Datos cifrados en tránsito.</p>
+        </div>
+      </div>
+    </div>
+    <div class="page-label">IDT Ledger · Propuesta Interna · Confidencial</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       4. CÓMO FUNCIONA
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="section-header">
+      <div class="section-number">3</div>
+      <div>
+        <h2>Flujo de uso</h2>
+        <p>De ticket físico a registro digital en menos de 60 segundos</p>
+      </div>
+    </div>
+    <div class="content">
+      <div class="flow">
+        <div class="flow-step">
+          <div class="flow-circle">📸</div>
+          <h4>1. Escanear</h4>
+          <p>Empleado abre la app y fotografía el ticket</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-circle">🤖</div>
+          <h4>2. IA extrae</h4>
+          <p>Gemini lee el texto y rellena el formulario</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-circle">✍️</div>
+          <h4>3. Revisar</h4>
+          <p>Empleado confirma o corrige los datos</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-circle">💾</div>
+          <h4>4. Guardar</h4>
+          <p>Ticket registrado en la base de datos</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-circle">👁️</div>
+          <h4>5. Admin revisa</h4>
+          <p>Administrador ve todo en tiempo real</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-circle">📊</div>
+          <h4>6. Exportar</h4>
+          <p>PDF o Excel listo para contabilidad</p>
+        </div>
+      </div>
+
+      <div style="margin-top: 32px;">
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 16px; color: var(--dark);">Sistema de roles</h3>
+        <div class="roles-grid">
+          <div class="role-card">
+            <div class="role-header admin">
+              <span>🛡️</span>
+              <h3>Administrador</h3>
+            </div>
+            <div class="role-body">
+              <ul>
+                <li>Ve todos los tickets de todos los empleados</li>
+                <li>Filtra por estado, fecha y empleado</li>
+                <li>Exporta a PDF con informe completo</li>
+                <li>Exporta a Excel con columna de empleado</li>
+                <li>Ve nombre del empleado en cada ticket</li>
+                <li>Acceso al Dashboard con totales globales</li>
+              </ul>
+            </div>
+          </div>
+          <div class="role-card">
+            <div class="role-header employee">
+              <span>👤</span>
+              <h3>Empleado</h3>
+            </div>
+            <div class="role-body">
+              <ul>
+                <li>Escanea tickets con su móvil</li>
+                <li>Revisa y confirma los datos extraídos por IA</li>
+                <li>Ve sus propios envíos del día</li>
+                <li>Comprueba que el ticket se guardó correctamente</li>
+                <li>No accede a datos de otros empleados</li>
+                <li>Interfaz simplificada y rápida</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="page-label">IDT Ledger · Propuesta Interna · Confidencial</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       5. TECNOLOGÍA Y SEGURIDAD
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="section-header">
+      <div class="section-number">4</div>
+      <div>
+        <h2>Tecnología y seguridad</h2>
+        <p>Stack moderno, probado y escalable</p>
+      </div>
+    </div>
+    <div class="content">
+      <div class="tech-grid">
+        <div class="tech-item">
+          <div class="logo">⚛️</div>
+          <h4>React + TypeScript</h4>
+          <p>Interfaz web moderna y responsive</p>
+        </div>
+        <div class="tech-item">
+          <div class="logo">🟦</div>
+          <h4>Supabase</h4>
+          <p>Base de datos PostgreSQL gestionada con autenticación segura</p>
+        </div>
+        <div class="tech-item">
+          <div class="logo">▲</div>
+          <h4>Vercel</h4>
+          <p>Hosting con CDN global, 99.99% uptime garantizado</p>
+        </div>
+        <div class="tech-item">
+          <div class="logo">🤖</div>
+          <h4>Google Gemini</h4>
+          <p>IA de visión para leer tickets en cualquier estado</p>
+        </div>
+      </div>
+
+      <div style="margin-top: 28px;">
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 16px; color: var(--dark);">Seguridad</h3>
+        <div class="security-grid">
+          <div class="sec-item">
+            <div class="icon">🔐</div>
+            <h4>Autenticación</h4>
+            <p>Login seguro con email y contraseña. Sesiones con tokens JWT de corta duración.</p>
+          </div>
+          <div class="sec-item">
+            <div class="icon">🛡️</div>
+            <h4>Row Level Security</h4>
+            <p>Cada empleado solo accede a sus datos. Imposible ver información de otros.</p>
+          </div>
+          <div class="sec-item">
+            <div class="icon">🔒</div>
+            <h4>Datos cifrados</h4>
+            <p>Toda comunicación va por HTTPS/TLS. Imágenes de tickets almacenadas de forma segura.</p>
+          </div>
+          <div class="sec-item">
+            <div class="icon">☁️</div>
+            <h4>Backups automáticos</h4>
+            <p>Supabase realiza copias de seguridad diarias automáticas de toda la base de datos.</p>
+          </div>
+          <div class="sec-item">
+            <div class="icon">📱</div>
+            <h4>Sin instalación</h4>
+            <p>Funciona desde el navegador del móvil. No requiere instalar ninguna app.</p>
+          </div>
+          <div class="sec-item">
+            <div class="icon">🌍</div>
+            <h4>Disponibilidad</h4>
+            <p>Accesible desde cualquier dispositivo con conexión a internet, 24/7.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="page-label">IDT Ledger · Propuesta Interna · Confidencial</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       6. COSTES
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="section-header">
+      <div class="section-number">5</div>
+      <div>
+        <h2>Costes de infraestructura</h2>
+        <p>Lo que cuesta mantener la aplicación funcionando cada mes</p>
+      </div>
+    </div>
+    <div class="content">
+      <table class="cost-table">
+        <thead>
+          <tr>
+            <th>Servicio</th>
+            <th>Descripción</th>
+            <th>Plan</th>
+            <th>Coste/mes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Vercel</strong></td>
+            <td>Hosting y distribución global de la aplicación web</td>
+            <td>Free Tier</td>
+            <td class="free">€0</td>
+          </tr>
+          <tr>
+            <td><strong>Supabase</strong></td>
+            <td>Base de datos PostgreSQL + autenticación + almacenamiento de imágenes</td>
+            <td>Free Tier</td>
+            <td class="free">€0</td>
+          </tr>
+          <tr>
+            <td><strong>Google Gemini API</strong></td>
+            <td>IA para leer y procesar imágenes de tickets (pay-per-use)</td>
+            <td>Pay-as-you-go</td>
+            <td><strong>&lt; €1</strong></td>
+          </tr>
+          <tr class="total-row">
+            <td colspan="3"><strong>COSTE TOTAL MENSUAL (uso actual)</strong></td>
+            <td><strong>~€1/mes</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight">
+        <p>📌 <strong>Nota:</strong> Los planes gratuitos soportan hasta ~50 usuarios activos y ~2.000 tickets/mes. Si la empresa crece significativamente, el coste máximo escalado sería de <strong>~€45/mes</strong> (Supabase Pro €23 + Vercel Pro €18 + Gemini ~€3).</p>
+      </div>
+
+      <div style="margin-top: 28px;">
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 16px; color: var(--dark);">Comparativa con soluciones del mercado</h3>
+        <div class="comparison">
+          <div class="comp-card ours">
+            <div class="comp-header">
+              <h3>✅ IDT Ledger (solución propia)</h3>
+              <div class="price">~€50<span class="price-sub">/mes máximo escalado</span></div>
+            </div>
+            <div class="comp-body">
+              <ul>
+                <li class="yes">Desarrollada a medida para INDET</li>
+                <li class="yes">Sin coste por empleado adicional</li>
+                <li class="yes">Control total de los datos</li>
+                <li class="yes">Personalizable según necesidades</li>
+                <li class="yes">Sin contratos ni permanencia</li>
+                <li class="yes">Exportación PDF y Excel incluida</li>
+              </ul>
+            </div>
+          </div>
+          <div class="comp-card market">
+            <div class="comp-header">
+              <h3>🏪 Expensify / Rydoo (mercado)</h3>
+              <div class="price">€160–€300<span class="price-sub">/mes (20 empleados)</span></div>
+            </div>
+            <div class="comp-body">
+              <ul>
+                <li class="yes">Solución estándar probada</li>
+                <li class="no">€8–€15 por empleado/mes</li>
+                <li class="no">Datos en servidores externos (EEUU)</li>
+                <li class="no">Sin personalización específica</li>
+                <li class="no">Contratos anuales obligatorios</li>
+                <li class="yes">Soporte técnico profesional</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="page-label">IDT Ledger · Propuesta Interna · Confidencial</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       7. INVERSIÓN
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="section-header">
+      <div class="section-number">6</div>
+      <div>
+        <h2>Propuesta de inversión interna</h2>
+        <p>Costes sugeridos considerando que es un proyecto interno de la empresa</p>
+      </div>
+    </div>
+    <div class="content">
+      <div class="investment-grid">
+        <div class="inv-card dev">
+          <div class="ico">💻</div>
+          <h3>Desarrollo</h3>
+          <div class="amount">€500</div>
+          <div class="amount-sub">pago único</div>
+          <p>Aplicación completa ya en producción. Incluye todas las funcionalidades actuales.</p>
+        </div>
+        <div class="inv-card infra">
+          <div class="ico">☁️</div>
+          <h3>Infraestructura</h3>
+          <div class="amount">€5/mes</div>
+          <div class="amount-sub">coste real + margen</div>
+          <p>Hosting, base de datos y API de IA. Cubre el coste real con pequeño margen operativo.</p>
+        </div>
+        <div class="inv-card maint">
+          <div class="ico">🔧</div>
+          <h3>Mantenimiento</h3>
+          <div class="amount">€50/mes</div>
+          <div class="amount-sub">soporte y mejoras</div>
+          <p>Corrección de errores, actualizaciones menores y soporte técnico mensual.</p>
+        </div>
+      </div>
+
+      <div class="highlight" style="margin-top: 24px;">
+        <p>💰 <strong>Coste total primer año:</strong> €500 (desarrollo) + 12 × €55 (infra + mantenimiento) = <strong>€1.160</strong> — frente a los <strong>€1.920–€3.600/año</strong> de una solución de mercado equivalente para 20 empleados.</p>
+      </div>
+
+      <div style="margin-top: 24px; background: var(--bg); border-radius: 12px; padding: 24px; border: 1px solid var(--border);">
+        <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">¿Qué incluye el mantenimiento mensual?</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div style="font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700;">✓</span> Supervisión del funcionamiento</div>
+          <div style="font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700;">✓</span> Corrección de errores</div>
+          <div style="font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700;">✓</span> Actualizaciones de seguridad</div>
+          <div style="font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700;">✓</span> Gestión de usuarios (altas/bajas)</div>
+          <div style="font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700;">✓</span> Mejoras menores del sistema</div>
+          <div style="font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px;"><span style="color: var(--primary); font-weight: 700;">✓</span> Soporte técnico por WhatsApp/email</div>
+        </div>
+      </div>
+    </div>
+    <div class="page-label">IDT Ledger · Propuesta Interna · Confidencial</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       8. ROADMAP
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="section-header">
+      <div class="section-number">7</div>
+      <div>
+        <h2>Hoja de ruta</h2>
+        <p>Estado actual y posibles mejoras futuras</p>
+      </div>
+    </div>
+    <div class="content">
+      <div class="roadmap">
+        <div class="roadmap-item">
+          <div class="roadmap-dot" style="background: #2e7d32;"></div>
+          <div class="roadmap-content">
+            <div class="roadmap-badge" style="background: #e8f5e9; color: #2e7d32;">✅ Completado — Marzo 2026</div>
+            <h4>Versión 1.0 — En producción</h4>
+            <p>Escaneo con cámara, extracción por IA (Gemini), revisión manual, sistema de roles admin/empleado, historial, Dashboard, exportación PDF y Excel, seguridad RLS.</p>
+          </div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-dot" style="background: #1565c0;"></div>
+          <div class="roadmap-content">
+            <div class="roadmap-badge" style="background: #e3f2fd; color: #1565c0;">🔜 Próxima versión</div>
+            <h4>Versión 1.1 — Mejoras operativas</h4>
+            <p>Notificaciones cuando un empleado envía un ticket, filtro por rango de fechas en el historial, estadísticas por categoría y empleado, cambio de estado de tickets (aprobar/rechazar).</p>
+          </div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-dot" style="background: var(--muted);"></div>
+          <div class="roadmap-content">
+            <div class="roadmap-badge">💡 Futuro</div>
+            <h4>Versión 2.0 — Integración contable</h4>
+            <p>Integración con software de contabilidad (A3, Contaplus), flujo de aprobación con firma digital, app nativa iOS/Android, y panel de control mensual automático por email.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="page-label">IDT Ledger · Propuesta Interna · Confidencial</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       9. CIERRE
+  ═══════════════════════════════════════════ -->
+  <div class="page">
+    <div class="closing">
+      <h2>Una solución real, ya funcionando</h2>
+      <p>IDT Ledger no es un proyecto en papel — está en producción hoy mismo, con datos reales y disponible para todos los empleados desde su móvil.</p>
+      <div class="closing-meta">
+        <div class="closing-meta-item">
+          <div class="label">URL de acceso</div>
+          <div class="value">app-scanner-theta.vercel.app</div>
+        </div>
+        <div class="closing-meta-item">
+          <div class="label">Coste mes actual</div>
+          <div class="value">~€1/mes</div>
+        </div>
+        <div class="closing-meta-item">
+          <div class="label">Tiempo de escaneo</div>
+          <div class="value">&lt; 60 segundos</div>
+        </div>
+        <div class="closing-meta-item">
+          <div class="label">Dispositivos</div>
+          <div class="value">Cualquier móvil</div>
+        </div>
+      </div>
+    </div>
+    <div class="page-label">IDT Ledger · Propuesta Interna · Confidencial · INDET Group 2026</div>
+  </div>
+
+</div>
+
+</body>
+</html>
