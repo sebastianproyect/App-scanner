@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import * as XLSX from 'xlsx'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Receipt } from '../lib/types'
+import { Receipt, Profile } from '../lib/types'
 
 const STATUS_LABELS: Record<string, { label: string; cls: string; icon: string }> = {
   pending:  { label: 'Pendiente', cls: 'bg-secondary-container text-on-secondary-container', icon: 'schedule' },
@@ -23,23 +23,45 @@ const CATEGORY_ICONS: Record<string, string> = {
 export default function History() {
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuth()
+  const isAdmin = profile?.role === 'admin'
+
   const [receipts, setReceipts] = useState<Receipt[]>([])
+  const [profilesMap, setProfilesMap] = useState<Record<string, Profile>>({})
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
   useEffect(() => {
-    if (!user) return
+    if (!user || !profile) return
     fetchReceipts()
-  }, [user])
+  }, [user, profile])
 
   async function fetchReceipts() {
     setLoading(true)
-    const { data, error } = await supabase
+
+    const query = supabase
       .from('receipts')
       .select('*, categories(id, name, icon)')
-      .order('date', { ascending: false })
-    if (!error && data) setReceipts(data as Receipt[])
+      .order('created_at', { ascending: false })   // newest first
+
+    const { data, error } = await query
+
+    if (!error && data) {
+      setReceipts(data as Receipt[])
+    } else if (error) {
+      console.error('Error cargando recibos:', error.message)
+    }
+
+    // Admin: also fetch all profiles to show submitter names
+    if (isAdmin) {
+      const { data: profilesData } = await supabase.from('profiles').select('id, full_name, role')
+      if (profilesData) {
+        const map: Record<string, Profile> = {}
+        profilesData.forEach(p => { map[p.id] = p as Profile })
+        setProfilesMap(map)
+      }
+    }
+
     setLoading(false)
   }
 
@@ -52,31 +74,35 @@ export default function History() {
   })
 
   function formatDate(d: string) {
-    return new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+    return new Date(d).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
   }
 
   function formatCurrency(n: number) {
-    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n)
+    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n)
   }
 
   function exportToExcel() {
     const rows = filtered.map(r => ({
+      'Empleado': isAdmin ? (profilesMap[r.user_id]?.full_name || r.user_id.slice(0, 8)) : undefined,
       'Proveedor': r.vendor,
       'Fecha': r.date,
       'Monto': r.amount,
-      'Impuesto': r.tax,
+      'IVA': r.tax,
       'Categoría': (r.categories as { name: string } | null)?.name ?? '',
       'Método de pago': r.payment_method,
       'Estado': STATUS_LABELS[r.status]?.label ?? r.status,
       'Notas': r.notes,
-      'Registrado': new Date(r.created_at).toLocaleDateString('es-MX'),
+      'Registrado': new Date(r.created_at).toLocaleDateString('es-ES'),
     }))
 
-    const ws = XLSX.utils.json_to_sheet(rows)
-    ws['!cols'] = [
-      { wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
-      { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 30 }, { wch: 14 },
-    ]
+    // Remove 'Empleado' column for non-admin
+    const finalRows = isAdmin ? rows : rows.map(({ Empleado: _, ...rest }) => rest)
+
+    const ws = XLSX.utils.json_to_sheet(finalRows)
+    ws['!cols'] = isAdmin
+      ? [{ wch: 18 }, { wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 30 }, { wch: 14 }]
+      : [{ wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 30 }, { wch: 14 }]
+
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Tickets IDT')
     XLSX.writeFile(wb, `IDT-Gastos-${new Date().toISOString().split('T')[0]}.xlsx`)
@@ -91,7 +117,12 @@ export default function History() {
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
               <span className="material-symbols-outlined text-white text-[18px]">account_balance</span>
             </div>
-            <span className="font-headline font-bold tracking-tight text-[#281812] text-xl">Historial</span>
+            <div>
+              <span className="font-headline font-bold tracking-tight text-[#281812] text-xl">Historial</span>
+              {isAdmin && (
+                <span className="ml-2 text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary px-2 py-0.5 rounded-full">Admin</span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-full">
@@ -111,6 +142,14 @@ export default function History() {
             </button>
           </div>
         </div>
+
+        {/* Admin banner */}
+        {isAdmin && (
+          <div className="bg-primary/5 border-t border-primary/10 px-6 py-2 flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[16px]">admin_panel_settings</span>
+            <span className="text-xs text-primary font-semibold">Vista administrador — mostrando todos los tickets de todos los empleados</span>
+          </div>
+        )}
       </header>
 
       <main className="max-w-5xl mx-auto px-6 mt-8">
@@ -148,29 +187,38 @@ export default function History() {
             </div>
           </div>
 
-          {/* Export Card */}
+          {/* Export Card — solo admin */}
           <div className="lg:col-span-4">
-            <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/15 h-full flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-on-tertiary-container rounded-lg flex items-center justify-center">
-                    <span className="material-symbols-outlined text-tertiary">table_chart</span>
+            {isAdmin ? (
+              <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/15 h-full flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-on-tertiary-container rounded-lg flex items-center justify-center">
+                      <span className="material-symbols-outlined text-tertiary">table_chart</span>
+                    </div>
+                    <h3 className="font-headline font-bold text-on-surface">Exportar Excel</h3>
                   </div>
-                  <h3 className="font-headline font-bold text-on-surface">Exportar Excel</h3>
+                  <p className="text-on-surface-variant text-sm leading-relaxed mb-4">
+                    Descarga todos los tickets en un archivo .xlsx con nombre del empleado.
+                  </p>
                 </div>
-                <p className="text-on-surface-variant text-sm leading-relaxed mb-4">
-                  Descarga todos los tickets en un archivo .xlsx listo para compartir.
+                <button
+                  onClick={exportToExcel}
+                  disabled={filtered.length === 0}
+                  className="editorial-gradient text-white w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 duration-200 shadow-lg shadow-primary/10 disabled:opacity-40"
+                >
+                  Descargar Excel
+                  <span className="material-symbols-outlined text-sm">download</span>
+                </button>
+              </div>
+            ) : (
+              <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/15 h-full flex flex-col justify-center items-center text-center gap-3">
+                <span className="material-symbols-outlined text-3xl text-on-surface-variant/40">lock</span>
+                <p className="text-on-surface-variant text-sm">
+                  Solo el administrador puede exportar y ver todos los tickets.
                 </p>
               </div>
-              <button
-                onClick={exportToExcel}
-                disabled={filtered.length === 0}
-                className="editorial-gradient text-white w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 duration-200 shadow-lg shadow-primary/10 disabled:opacity-40"
-              >
-                Descargar Excel
-                <span className="material-symbols-outlined text-sm">download</span>
-              </button>
-            </div>
+            )}
           </div>
         </section>
 
@@ -179,6 +227,7 @@ export default function History() {
           <div>
             <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant/70 font-label">
               {filtered.length} ticket{filtered.length !== 1 ? 's' : ''}
+              {isAdmin && receipts.length > 0 && ` · ${[...new Set(receipts.map(r => r.user_id))].length} empleado(s)`}
             </span>
             <h2 className="text-3xl font-headline font-extrabold text-on-surface mt-1">Tickets recientes</h2>
           </div>
@@ -218,10 +267,11 @@ export default function History() {
             {filtered.map(r => {
               const cat = r.categories as { name: string; icon?: string } | null
               const st = STATUS_LABELS[r.status] ?? STATUS_LABELS.pending
+              const submitter = isAdmin ? profilesMap[r.user_id] : null
               return (
                 <div
                   key={r.id}
-                  className="group bg-surface-container-lowest hover:bg-surface-container-low transition-colors rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer"
+                  className="group bg-surface-container-lowest hover:bg-surface-container-low transition-colors rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-14 rounded-xl bg-surface-container flex items-center justify-center shrink-0">
@@ -230,11 +280,18 @@ export default function History() {
                       </span>
                     </div>
                     <div>
-                      <h4 className="font-bold text-on-surface text-base leading-tight">{r.vendor}</h4>
+                      <h4 className="font-bold text-on-surface text-base leading-tight">{r.vendor || '—'}</h4>
                       <div className="flex items-center gap-3 mt-1 flex-wrap">
                         <span className="text-xs font-medium text-on-surface-variant">{formatDate(r.date)}</span>
                         {cat?.name && (
                           <span className="text-xs text-on-surface-variant/70">• {cat.name}</span>
+                        )}
+                        {/* Admin: show submitter name */}
+                        {submitter && (
+                          <span className="flex items-center gap-1 text-xs text-primary/70 font-medium">
+                            <span className="material-symbols-outlined text-[12px]">person</span>
+                            {submitter.full_name || 'Empleado'}
+                          </span>
                         )}
                         <span className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded-md ${st.cls}`}>
                           <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: r.status === 'synced' ? "'FILL' 1" : "'FILL' 0" }}>
