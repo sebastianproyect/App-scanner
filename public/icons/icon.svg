@@ -1,15 +1,41 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#a63500"/>
-  <rect x="80" y="200" width="352" height="220" rx="12" fill="white" opacity="0.15"/>
-  <!-- Columns -->
-  <rect x="112" y="220" width="50" height="180" rx="6" fill="white"/>
-  <rect x="181" y="220" width="50" height="180" rx="6" fill="white"/>
-  <rect x="250" y="220" width="50" height="180" rx="6" fill="white"/>
-  <rect x="319" y="220" width="50" height="180" rx="6" fill="white"/>
-  <!-- Base -->
-  <rect x="80" y="388" width="352" height="24" rx="6" fill="white"/>
-  <!-- Roof -->
-  <rect x="80" y="185" width="352" height="22" rx="4" fill="white"/>
-  <!-- Triangle/pediment -->
-  <polygon points="256,90 432,185 80,185" fill="white"/>
+  <!-- White background (iOS adds its own rounded corners) -->
+  <rect width="512" height="512" fill="white"/>
+
+  <!-- Letter i -->
+  <rect x="38" y="130" width="28" height="240" rx="14" fill="#a63500"/>
+
+  <!-- Letter d: stem -->
+  <rect x="88" y="130" width="28" height="240" rx="14" fill="#a63500"/>
+  <!-- Letter d: bowl as filled path (open circle connecting to stem) -->
+  <path d="
+    M 116 178
+    A 78 78 0 1 1 116 322
+    L 116 298
+    A 52 52 0 1 0 116 202
+    Z
+  " fill="#a63500"/>
+
+  <!-- Letter t: vertical stem -->
+  <rect x="276" y="168" width="28" height="202" rx="14" fill="#a63500"/>
+  <!-- Letter t: crossbar -->
+  <rect x="246" y="168" width="90" height="28" rx="14" fill="#a63500"/>
+
+  <!-- Dots pattern: two arc rows, decreasing size toward upper-right -->
+  <!-- Inner arc (larger dots) -->
+  <circle cx="368" cy="232" r="17" fill="#a63500"/>
+  <circle cx="392" cy="206" r="15" fill="#a63500"/>
+  <circle cx="420" cy="188" r="13" fill="#a63500"/>
+  <circle cx="450" cy="178" r="11" fill="#a63500"/>
+  <!-- Outer arc (smaller dots) -->
+  <circle cx="375" cy="198" r="14" fill="#a63500"/>
+  <circle cx="402" cy="174" r="12" fill="#a63500"/>
+  <circle cx="432" cy="158" r="10" fill="#a63500"/>
+  <circle cx="460" cy="150" r="9" fill="#a63500"/>
+  <circle cx="484" cy="155" r="8" fill="#a63500"/>
+
+  <!-- "by indet.group." -->
+  <text x="38" y="415"
+        font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif"
+        font-size="42" font-weight="700" fill="#3a3a3a">by indet.group.</text>
 </svg>

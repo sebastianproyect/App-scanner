@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/icon.svg'],
       manifest: {
-        name: 'IDT Ledger',
-        short_name: 'IDT Ledger',
+        name: 'Scanner Indet',
+        short_name: 'Scanner Indet',
         description: 'Gestión de gastos empresariales — INDET Group',
         theme_color: '#a63500',
         background_color: '#fff8f6',
