@@ -67,7 +67,7 @@ export default function ReviewReceipt() {
     return new Promise(resolve => {
       const img = new Image()
       img.onload = () => {
-        const MAX = 1024
+        const MAX = 1600
         let { width, height } = img
         if (width > MAX || height > MAX) {
           if (width > height) { height = Math.round(height * MAX / width); width = MAX }
@@ -77,7 +77,7 @@ export default function ReviewReceipt() {
         canvas.width = width
         canvas.height = height
         canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
-        resolve(canvas.toDataURL('image/jpeg', 0.75))
+        resolve(canvas.toDataURL('image/jpeg', 0.92))
       }
       img.src = dataUrl
     })
