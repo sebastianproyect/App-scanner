@@ -97,6 +97,11 @@ export default function ReviewReceipt() {
 
       const result = data.data as AiResult
 
+      // Si Gemini no extrajo nada útil, tratarlo como fallo
+      if (!result.vendor && !result.amount) {
+        throw new Error('La IA no pudo leer el ticket. Completa los campos manualmente.')
+      }
+
       setVendor(result.vendor || '')
       if (result.date) setDate(result.date)
       if (result.amount) setAmount(String(result.amount))
