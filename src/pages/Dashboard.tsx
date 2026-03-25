@@ -7,32 +7,34 @@ import { Receipt } from '../lib/types'
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuth()
+  const isAdmin = profile?.role === 'admin'
   const [receipts, setReceipts] = useState<Receipt[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!user) return
-    supabase
+    if (!user || !profile) return
+    let query = supabase
       .from('receipts')
       .select('*, categories(id, name, icon)')
       .order('created_at', { ascending: false })
       .limit(20)
-      .then(({ data }) => {
-        if (data) setReceipts(data as Receipt[])
-        setLoading(false)
-      })
-  }, [user])
+    if (!isAdmin) query = query.eq('user_id', user.id)
+    query.then(({ data }) => {
+      if (data) setReceipts(data as Receipt[])
+      setLoading(false)
+    })
+  }, [user, profile])
 
   const totalExpenses = receipts.reduce((s, r) => s + Number(r.amount), 0)
   const pendingCount  = receipts.filter(r => r.status === 'pending').length
   const currentMonth  = new Date().toLocaleString('es-MX', { month: 'long', year: 'numeric' })
 
   function formatCurrency(n: number) {
-    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n)
+    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n)
   }
 
   function formatDate(d: string) {
-    return new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+    return new Date(d).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
   }
 
   const STATUS_STYLES: Record<string, string> = {

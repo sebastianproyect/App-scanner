@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import * as XLSX from 'xlsx'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Receipt, Profile } from '../lib/types'
@@ -91,6 +93,104 @@ export default function History() {
 
   function formatCurrency(n: number) {
     return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n)
+  }
+
+  function exportToPDF() {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const pageW = doc.internal.pageSize.getWidth()
+    const today = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
+
+    // Header background
+    doc.setFillColor(166, 53, 0)
+    doc.rect(0, 0, pageW, 38, 'F')
+
+    // Logo area
+    doc.setFillColor(255, 255, 255, 0.15)
+    doc.roundedRect(14, 8, 22, 22, 3, 3, 'F')
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(255, 255, 255)
+    doc.text('IDT', 25, 22, { align: 'center' })
+
+    // Title
+    doc.setFontSize(18)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Informe de Gastos', 42, 18)
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Generado el ${today}`, 42, 26)
+    if (isAdmin) doc.text('Vista administrador — todos los empleados', 42, 32)
+
+    // Summary cards
+    const total = filtered.reduce((s, r) => s + Number(r.amount), 0)
+    const totalTax = filtered.reduce((s, r) => s + Number(r.tax), 0)
+    const pending = filtered.filter(r => r.status === 'pending').length
+
+    doc.setFillColor(255, 248, 246)
+    doc.roundedRect(14, 44, 55, 22, 3, 3, 'F')
+    doc.roundedRect(75, 44, 55, 22, 3, 3, 'F')
+    doc.roundedRect(136, 44, 55, 22, 3, 3, 'F')
+
+    doc.setFontSize(7)
+    doc.setTextColor(92, 64, 55)
+    doc.setFont('helvetica', 'normal')
+    doc.text('TOTAL GASTOS', 41, 51, { align: 'center' })
+    doc.text('TOTAL IVA', 102, 51, { align: 'center' })
+    doc.text('PENDIENTES', 163, 51, { align: 'center' })
+
+    doc.setFontSize(13)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(166, 53, 0)
+    doc.text(formatCurrency(total), 41, 61, { align: 'center' })
+    doc.text(formatCurrency(totalTax), 102, 61, { align: 'center' })
+    doc.setTextColor(40, 24, 18)
+    doc.text(String(pending), 163, 61, { align: 'center' })
+
+    // Table
+    const head = isAdmin
+      ? [['Empleado', 'Proveedor', 'Fecha', 'Categoría', 'Método pago', 'IVA', 'Total', 'Estado']]
+      : [['Proveedor', 'Fecha', 'Categoría', 'Método pago', 'IVA', 'Total', 'Estado']]
+
+    const body = filtered.map(r => {
+      const cat = (r.categories as { name: string } | null)?.name ?? '—'
+      const st = STATUS_LABELS[r.status]?.label ?? r.status
+      const row = [
+        r.vendor || '—',
+        formatDate(r.date),
+        cat,
+        r.payment_method || '—',
+        formatCurrency(r.tax),
+        formatCurrency(r.amount),
+        st,
+      ]
+      if (isAdmin) row.unshift(profilesMap[r.user_id]?.full_name || 'Empleado')
+      return row
+    })
+
+    autoTable(doc, {
+      startY: 72,
+      head,
+      body,
+      theme: 'grid',
+      headStyles: { fillColor: [166, 53, 0], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+      bodyStyles: { fontSize: 8, textColor: [40, 24, 18] },
+      alternateRowStyles: { fillColor: [255, 248, 246] },
+      columnStyles: { [isAdmin ? 7 : 6]: { fontStyle: 'bold' } },
+      margin: { left: 14, right: 14 },
+    })
+
+    // Footer
+    const pageCount = (doc as unknown as { internal: { getNumberOfPages: () => number } }).internal.getNumberOfPages()
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i)
+      doc.setFontSize(7)
+      doc.setTextColor(150)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`IDT Ledger — Informe confidencial`, 14, 290)
+      doc.text(`Página ${i} de ${pageCount}`, pageW - 14, 290, { align: 'right' })
+    }
+
+    doc.save(`IDT-Informe-${new Date().toISOString().split('T')[0]}.pdf`)
   }
 
   function exportToExcel() {
@@ -214,14 +314,24 @@ export default function History() {
                     Descarga todos los tickets en un archivo .xlsx con nombre del empleado.
                   </p>
                 </div>
-                <button
-                  onClick={exportToExcel}
-                  disabled={filtered.length === 0}
-                  className="editorial-gradient text-white w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 duration-200 shadow-lg shadow-primary/10 disabled:opacity-40"
-                >
-                  Descargar Excel
-                  <span className="material-symbols-outlined text-sm">download</span>
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={exportToPDF}
+                    disabled={filtered.length === 0}
+                    className="flex-1 bg-[#a63500] text-white py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 duration-200 shadow-lg shadow-primary/10 disabled:opacity-40"
+                  >
+                    PDF
+                    <span className="material-symbols-outlined text-sm">picture_as_pdf</span>
+                  </button>
+                  <button
+                    onClick={exportToExcel}
+                    disabled={filtered.length === 0}
+                    className="flex-1 editorial-gradient text-white py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 duration-200 shadow-lg shadow-primary/10 disabled:opacity-40"
+                  >
+                    Excel
+                    <span className="material-symbols-outlined text-sm">table_chart</span>
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/15 h-full flex flex-col justify-center items-center text-center gap-3">
