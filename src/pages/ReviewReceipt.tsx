@@ -223,9 +223,7 @@ export default function ReviewReceipt() {
             Revisar Ticket
           </span>
         </div>
-        <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-          <span className="material-symbols-outlined text-white text-[18px]">account_balance</span>
-        </div>
+        <img src="/icons/icon.png" alt="IDT" className="h-8 w-auto object-contain" style={{ mixBlendMode: 'multiply' }} />
       </header>
 
       <form onSubmit={handleSave}>

@@ -403,9 +403,7 @@ export default function History() {
       <header className="bg-[#fff8f6] top-0 sticky z-50">
         <div className="flex items-center justify-between px-6 py-4 w-full">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="material-symbols-outlined text-white text-[18px]">account_balance</span>
-            </div>
+            <img src="/icons/icon.png" alt="IDT" className="h-8 w-auto object-contain" style={{ mixBlendMode: 'multiply' }} />
             <div>
               <span className="font-headline font-bold tracking-tight text-[#281812] text-xl">Historial</span>
               {isAdmin && (
