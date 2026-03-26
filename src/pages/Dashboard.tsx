@@ -57,7 +57,7 @@ export default function Dashboard() {
       <header className="bg-[#fff8f6] top-0 sticky z-50">
         <div className="flex items-center justify-between px-6 py-4 w-full">
           <div className="flex items-center gap-4">
-            <img src="/icons/icon.png" alt="IDT" className="h-8 w-8 rounded-lg object-contain" />
+            <img src="/icons/icon.png" alt="IDT" className="h-7 w-auto max-w-[90px] object-contain" style={{ mixBlendMode: 'multiply' }} />
             <h1 className="font-headline font-bold tracking-tight text-[#281812] text-xl">Indet Scanner</h1>
           </div>
           <div className="hidden md:flex items-center gap-6">

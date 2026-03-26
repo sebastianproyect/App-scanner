@@ -28,7 +28,7 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
-          <img src="/icons/icon.png" alt="IDT" className="w-16 h-16 rounded-2xl object-contain mb-4 shadow-lg" />
+          <img src="/icons/icon.png" alt="IDT" className="w-28 h-auto object-contain mb-4" style={{ mixBlendMode: 'multiply' }} />
           <h1 className="font-headline font-extrabold text-3xl text-on-surface tracking-tight">
             Indet Scanner
           </h1>
