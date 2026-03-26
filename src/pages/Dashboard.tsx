@@ -57,9 +57,7 @@ export default function Dashboard() {
       <header className="bg-[#fff8f6] top-0 sticky z-50">
         <div className="flex items-center justify-between px-6 py-4 w-full">
           <div className="flex items-center gap-4">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="material-symbols-outlined text-white text-[18px]">account_balance</span>
-            </div>
+            <img src="/icons/icon.png" alt="IDT" className="h-8 w-8 rounded-lg object-contain" />
             <h1 className="font-headline font-bold tracking-tight text-[#281812] text-xl">IDT Ledger</h1>
           </div>
           <div className="hidden md:flex items-center gap-6">
@@ -68,6 +66,11 @@ export default function Dashboard() {
               <Link to="/history" className="text-[#5c4037] hover:bg-[#fbdcd3]/50 transition-colors px-3 py-1 rounded-lg text-sm">
                 Historial
               </Link>
+              {isAdmin && (
+                <Link to="/users" className="text-[#5c4037] hover:bg-[#fbdcd3]/50 transition-colors px-3 py-1 rounded-lg text-sm">
+                  Usuarios
+                </Link>
+              )}
             </nav>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-full">
@@ -280,6 +283,12 @@ export default function Dashboard() {
           <span className="material-symbols-outlined">history</span>
           <span className="text-[11px] font-semibold uppercase tracking-wider mt-1">Historial</span>
         </Link>
+        {isAdmin && (
+          <Link to="/users" className="flex flex-col items-center text-[#5c4037] px-5 py-2 hover:opacity-80 active:scale-90 duration-150">
+            <span className="material-symbols-outlined">group</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider mt-1">Usuarios</span>
+          </Link>
+        )}
         <button onClick={signOut} className="flex flex-col items-center text-[#5c4037] px-5 py-2 hover:opacity-80 active:scale-90 duration-150">
           <span className="material-symbols-outlined">logout</span>
           <span className="text-[11px] font-semibold uppercase tracking-wider mt-1">Salir</span>

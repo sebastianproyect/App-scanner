@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import ExcelJS from 'exceljs'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { supabase } from '../lib/supabase'
+import { supabase, writeAuditLog } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Receipt, Profile } from '../lib/types'
 
@@ -50,13 +50,9 @@ export default function History() {
       .select('*, categories(id, name, icon)')
       .order('created_at', { ascending: false })
 
-    // Employee: only sees their own tickets from today
+    // Employee: only sees their own tickets
     if (!isAdmin) {
-      const todayStart = new Date()
-      todayStart.setHours(0, 0, 0, 0)
-      query = query
-        .eq('user_id', user!.id)
-        .gte('created_at', todayStart.toISOString())
+      query = query.eq('user_id', user!.id)
     }
 
     const { data, error } = await query
@@ -88,6 +84,23 @@ export default function History() {
     const matchStatus = statusFilter === 'all' || r.status === statusFilter
     return matchSearch && matchStatus
   })
+
+  async function changeStatus(receiptId: string, newStatus: string, receipt: Receipt) {
+    const { error } = await supabase
+      .from('receipts')
+      .update({ status: newStatus })
+      .eq('id', receiptId)
+    if (!error) {
+      setReceipts(prev => prev.map(r => r.id === receiptId ? { ...r, status: newStatus as Receipt['status'] } : r))
+      await writeAuditLog('status_changed', receiptId, {
+        old_status: receipt.status,
+        new_status: newStatus,
+        vendor: receipt.vendor,
+        amount: receipt.amount,
+        receipt_user_id: receipt.user_id,
+      })
+    }
+  }
 
   function getImageUrl(path: string): string {
     const { data } = supabase.storage.from('receipt-images').getPublicUrl(path)
@@ -648,9 +661,29 @@ export default function History() {
                                 </div>
                               </div>
                             </div>
-                            <div className="text-right shrink-0">
-                              {r.tax > 0 && <span className="block text-xs text-on-surface-variant mb-0.5">IVA: {formatCurrency(r.tax)}</span>}
-                              <span className="font-headline font-bold text-base text-on-surface">{formatCurrency(r.amount)}</span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {r.status === 'pending' && (
+                                <>
+                                  <button
+                                    onClick={() => changeStatus(r.id, 'synced', r)}
+                                    className="w-8 h-8 rounded-full bg-tertiary/10 hover:bg-tertiary/20 flex items-center justify-center transition-colors"
+                                    title="Aprobar"
+                                  >
+                                    <span className="material-symbols-outlined text-tertiary text-[18px]">check</span>
+                                  </button>
+                                  <button
+                                    onClick={() => changeStatus(r.id, 'flagged', r)}
+                                    className="w-8 h-8 rounded-full bg-error-container/40 hover:bg-error-container/70 flex items-center justify-center transition-colors"
+                                    title="Rechazar"
+                                  >
+                                    <span className="material-symbols-outlined text-error text-[18px]">close</span>
+                                  </button>
+                                </>
+                              )}
+                              <div className="text-right">
+                                {r.tax > 0 && <span className="block text-xs text-on-surface-variant mb-0.5">IVA: {formatCurrency(r.tax)}</span>}
+                                <span className="font-headline font-bold text-base text-on-surface">{formatCurrency(r.amount)}</span>
+                              </div>
                             </div>
                           </div>
                         )
@@ -747,6 +780,12 @@ export default function History() {
           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>history</span>
           <span className="text-[11px] font-semibold uppercase tracking-wider mt-1">Historial</span>
         </Link>
+        {isAdmin && (
+          <Link to="/users" className="flex flex-col items-center text-[#5c4037] px-5 py-2 hover:opacity-80 active:scale-90 duration-150">
+            <span className="material-symbols-outlined">group</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider mt-1">Usuarios</span>
+          </Link>
+        )}
         <button
           onClick={() => navigate('/scanner')}
           className="flex flex-col items-center text-[#5c4037] px-5 py-2 hover:opacity-80 active:scale-90 duration-150"

@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { supabase, writeAuditLog } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Category } from '../lib/types'
 
@@ -166,6 +166,12 @@ export default function ReviewReceipt() {
     if (insertError) {
       setError('Error al guardar. Intenta de nuevo.')
     } else {
+      await writeAuditLog('receipt_created', undefined, {
+        vendor: vendor.trim(),
+        date,
+        amount: parseFloat(amount) || 0,
+        has_image: !!image_url,
+      })
       navigate('/history')
     }
   }

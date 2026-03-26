@@ -28,9 +28,7 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
-          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-lg shadow-primary/20">
-            <span className="material-symbols-outlined text-white text-3xl">account_balance</span>
-          </div>
+          <img src="/icons/icon.png" alt="IDT" className="w-16 h-16 rounded-2xl object-contain mb-4 shadow-lg" />
           <h1 className="font-headline font-extrabold text-3xl text-on-surface tracking-tight">
             IDT Ledger
           </h1>

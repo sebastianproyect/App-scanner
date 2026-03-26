@@ -6,6 +6,8 @@ import Scanner from './pages/Scanner'
 import History from './pages/History'
 import ReviewReceipt from './pages/ReviewReceipt'
 import Login from './pages/Login'
+import Users from './pages/Users'
+import NotFound from './pages/NotFound'
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth()
@@ -14,9 +16,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center animate-pulse">
-            <span className="material-symbols-outlined text-white">account_balance</span>
-          </div>
+          <img src="/icons/icon.png" alt="IDT" className="w-12 h-12 rounded-2xl object-contain animate-pulse" />
           <p className="text-on-surface-variant text-sm font-medium">Cargando...</p>
         </div>
       </div>
@@ -24,6 +24,13 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   if (!session) return <Navigate to="/login" replace />
+  return <>{children}</>
+}
+
+function AdminRoute({ children }: { children: ReactNode }) {
+  const { profile, loading } = useAuth()
+  if (loading) return null
+  if (profile?.role !== 'admin') return <Navigate to="/dashboard" replace />
   return <>{children}</>
 }
 
@@ -38,6 +45,8 @@ function AppRoutes() {
       <Route path="/scanner" element={<ProtectedRoute><Scanner /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
       <Route path="/review" element={<ProtectedRoute><ReviewReceipt /></ProtectedRoute>} />
+      <Route path="/users" element={<ProtectedRoute><AdminRoute><Users /></AdminRoute></ProtectedRoute>} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }
