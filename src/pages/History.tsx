@@ -34,6 +34,7 @@ export default function History() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [collapsedEmployees, setCollapsedEmployees] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!user || !profile) return
@@ -562,28 +563,119 @@ export default function History() {
               </button>
             )}
           </div>
+        ) : isAdmin ? (
+          /* ── ADMIN: grouped by employee ── */
+          <div className="space-y-6">
+            {Object.entries(
+              filtered.reduce((acc, r) => {
+                if (!acc[r.user_id]) acc[r.user_id] = []
+                acc[r.user_id].push(r)
+                return acc
+              }, {} as Record<string, Receipt[]>)
+            )
+            .sort(([, a], [, b]) => b.filter(r => r.status === 'pending').length - a.filter(r => r.status === 'pending').length)
+            .map(([userId, userReceipts]) => {
+              const emp = profilesMap[userId]
+              const total = userReceipts.reduce((s, r) => s + Number(r.amount), 0)
+              const pending = userReceipts.filter(r => r.status === 'pending').length
+              const collapsed = collapsedEmployees.has(userId)
+              const initials = emp?.full_name
+                ? emp.full_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+                : '?'
+              return (
+                <div key={userId} className="rounded-2xl overflow-hidden border border-outline-variant/15">
+                  {/* Employee header */}
+                  <button
+                    onClick={() => setCollapsedEmployees(prev => {
+                      const next = new Set(prev)
+                      next.has(userId) ? next.delete(userId) : next.add(userId)
+                      return next
+                    })}
+                    className="w-full flex items-center justify-between px-5 py-4 bg-surface-container hover:bg-surface-container-low transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-11 h-11 rounded-xl bg-primary flex items-center justify-center shrink-0">
+                        <span className="font-headline font-bold text-white text-sm">{initials}</span>
+                      </div>
+                      <div className="text-left">
+                        <p className="font-bold text-on-surface text-base leading-tight">
+                          {emp?.full_name || 'Empleado'}
+                        </p>
+                        <p className="text-xs text-on-surface-variant mt-0.5">
+                          {userReceipts.length} ticket{userReceipts.length !== 1 ? 's' : ''}
+                          {pending > 0 && <span className="ml-2 text-secondary-container bg-secondary-container/20 px-1.5 py-0.5 rounded font-semibold">{pending} pendiente{pending !== 1 ? 's' : ''}</span>}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="font-headline font-extrabold text-lg text-primary">{formatCurrency(total)}</span>
+                      <span className={`material-symbols-outlined text-on-surface-variant transition-transform ${collapsed ? '' : 'rotate-180'}`}>
+                        keyboard_arrow_down
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* Tickets for this employee */}
+                  {!collapsed && (
+                    <div className="divide-y divide-outline-variant/10">
+                      {userReceipts.map(r => {
+                        const cat = r.categories as { name: string } | null
+                        const st = STATUS_LABELS[r.status] ?? STATUS_LABELS.pending
+                        return (
+                          <div key={r.id} className="flex items-center justify-between px-5 py-4 bg-surface-container-lowest hover:bg-surface-container-low/50 transition-colors gap-4">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div
+                                className={`w-12 h-12 rounded-xl bg-surface-container shrink-0 overflow-hidden flex items-center justify-center ${r.image_url ? 'cursor-pointer hover:ring-2 hover:ring-primary' : ''}`}
+                                onClick={() => r.image_url && setSelectedImage(getImageUrl(r.image_url))}
+                              >
+                                {r.image_url ? (
+                                  <img src={getImageUrl(r.image_url)} alt="Ticket" className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="material-symbols-outlined text-primary text-xl">
+                                    {cat?.name ? (CATEGORY_ICONS[cat.name] ?? 'receipt') : 'receipt'}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-on-surface text-sm truncate">{r.vendor || '—'}</p>
+                                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                  <span className="text-xs text-on-surface-variant">{formatDate(r.date)}</span>
+                                  {cat?.name && <span className="text-xs text-on-surface-variant/60">• {cat.name}</span>}
+                                  <span className={`flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-tighter px-1.5 py-0.5 rounded ${st.cls}`}>
+                                    <span className="material-symbols-outlined text-[11px]">{st.icon}</span>
+                                    {st.label}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              {r.tax > 0 && <span className="block text-xs text-on-surface-variant mb-0.5">IVA: {formatCurrency(r.tax)}</span>}
+                              <span className="font-headline font-bold text-base text-on-surface">{formatCurrency(r.amount)}</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         ) : (
+          /* ── EMPLOYEE: flat list ── */
           <div className="space-y-3">
             {filtered.map(r => {
               const cat = r.categories as { name: string; icon?: string } | null
               const st = STATUS_LABELS[r.status] ?? STATUS_LABELS.pending
-              const submitter = isAdmin ? profilesMap[r.user_id] : null
               return (
-                <div
-                  key={r.id}
-                  className="group bg-surface-container-lowest hover:bg-surface-container-low transition-colors rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4"
-                >
+                <div key={r.id} className="group bg-surface-container-lowest hover:bg-surface-container-low transition-colors rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div
                       className={`w-14 h-14 rounded-xl bg-surface-container flex items-center justify-center shrink-0 overflow-hidden ${r.image_url ? 'cursor-pointer ring-2 ring-transparent hover:ring-primary transition-all' : ''}`}
                       onClick={() => r.image_url && setSelectedImage(getImageUrl(r.image_url))}
                     >
                       {r.image_url ? (
-                        <img
-                          src={getImageUrl(r.image_url)}
-                          alt="Ticket"
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={getImageUrl(r.image_url)} alt="Ticket" className="w-full h-full object-cover" />
                       ) : (
                         <span className="material-symbols-outlined text-primary text-2xl">
                           {cat?.name ? (CATEGORY_ICONS[cat.name] ?? 'receipt') : 'receipt'}
@@ -594,36 +686,17 @@ export default function History() {
                       <h4 className="font-bold text-on-surface text-base leading-tight">{r.vendor || '—'}</h4>
                       <div className="flex items-center gap-3 mt-1 flex-wrap">
                         <span className="text-xs font-medium text-on-surface-variant">{formatDate(r.date)}</span>
-                        {cat?.name && (
-                          <span className="text-xs text-on-surface-variant/70">• {cat.name}</span>
-                        )}
-                        {/* Admin: show submitter name */}
-                        {submitter && (
-                          <span className="flex items-center gap-1 text-xs text-primary/70 font-medium">
-                            <span className="material-symbols-outlined text-[12px]">person</span>
-                            {submitter.full_name || 'Empleado'}
-                          </span>
-                        )}
+                        {cat?.name && <span className="text-xs text-on-surface-variant/70">• {cat.name}</span>}
                         <span className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded-md ${st.cls}`}>
-                          <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: r.status === 'synced' ? "'FILL' 1" : "'FILL' 0" }}>
-                            {st.icon}
-                          </span>
+                          <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: r.status === 'synced' ? "'FILL' 1" : "'FILL' 0" }}>{st.icon}</span>
                           {st.label}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between md:justify-end gap-6">
-                    <div className="text-right">
-                      {r.tax > 0 && (
-                        <span className="block text-xs text-on-surface-variant font-label mb-0.5">
-                          IVA: {formatCurrency(r.tax)}
-                        </span>
-                      )}
-                      <span className="block font-headline font-extrabold text-xl text-on-surface">
-                        {formatCurrency(r.amount)}
-                      </span>
-                    </div>
+                  <div className="text-right">
+                    {r.tax > 0 && <span className="block text-xs text-on-surface-variant font-label mb-0.5">IVA: {formatCurrency(r.tax)}</span>}
+                    <span className="block font-headline font-extrabold text-xl text-on-surface">{formatCurrency(r.amount)}</span>
                   </div>
                 </div>
               )

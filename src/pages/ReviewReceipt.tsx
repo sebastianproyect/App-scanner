@@ -50,6 +50,8 @@ export default function ReviewReceipt() {
   const [aiError, setAiError] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [aiDone, setAiDone] = useState(false)
+  const [duplicateWarning, setDuplicateWarning] = useState<{ vendor: string; date: string; amount: number } | null>(null)
+  const [pendingSave, setPendingSave] = useState(false)
 
   useEffect(() => {
     supabase.from('categories').select('*').then(({ data }) => {
@@ -127,11 +129,12 @@ export default function ReviewReceipt() {
     }
   }
 
-  async function handleSave(e: FormEvent) {
-    e.preventDefault()
+  async function doSave() {
     if (!user) return
-    setError('')
+    setDuplicateWarning(null)
+    setPendingSave(false)
     setSaving(true)
+    setError('')
 
     let image_url: string | null = null
 
@@ -143,9 +146,7 @@ export default function ReviewReceipt() {
           .from('receipt-images')
           .upload(fileName, blob, { contentType: 'image/jpeg', upsert: false })
         if (uploadData) image_url = uploadData.path
-      } catch {
-        // Image upload failed, continue without it
-      }
+      } catch { /* continue without image */ }
     }
 
     const { error: insertError } = await supabase.from('receipts').insert({
@@ -162,14 +163,44 @@ export default function ReviewReceipt() {
     })
 
     setSaving(false)
-
     if (insertError) {
       setError('Error al guardar. Intenta de nuevo.')
-      console.error(insertError)
     } else {
       navigate('/history')
     }
   }
+
+  async function handleSave(e: FormEvent) {
+    e.preventDefault()
+    if (!user) return
+    setError('')
+
+    // ── Duplicate check ──────────────────────────────────────────────────────
+    const amountNum = parseFloat(amount) || 0
+    if (vendor.trim() && amountNum > 0) {
+      const { data: existing } = await supabase
+        .from('receipts')
+        .select('vendor, date, amount')
+        .eq('user_id', user.id)
+        .eq('date', date)
+        .ilike('vendor', `%${vendor.trim().split(' ')[0]}%`)
+        .limit(5)
+
+      const dup = existing?.find(r => {
+        const diff = Math.abs(Number(r.amount) - amountNum)
+        return diff / (amountNum || 1) < 0.05   // within 5%
+      })
+
+      if (dup) {
+        setDuplicateWarning({ vendor: dup.vendor, date: dup.date, amount: Number(dup.amount) })
+        setPendingSave(true)
+        return
+      }
+    }
+
+    await doSave()
+  }
+
 
   return (
     <div className="bg-background font-body text-on-surface selection:bg-surface-container-highest min-h-screen">
@@ -408,6 +439,45 @@ export default function ReviewReceipt() {
             )}
           </div>
         </main>
+
+      {/* Duplicate Warning Modal */}
+      {duplicateWarning && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="bg-background rounded-3xl p-7 w-full max-w-sm shadow-2xl space-y-5">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-secondary-container flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-on-secondary-container text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>content_copy</span>
+              </div>
+              <div>
+                <h3 className="font-headline font-bold text-on-surface text-lg leading-tight">Ticket posiblemente duplicado</h3>
+                <p className="text-on-surface-variant text-sm mt-1">Ya existe un ticket muy parecido guardado hoy:</p>
+              </div>
+            </div>
+            <div className="bg-surface-container-low rounded-2xl p-4 space-y-1">
+              <p className="font-bold text-on-surface text-sm">{duplicateWarning.vendor}</p>
+              <p className="text-on-surface-variant text-xs">{new Date(duplicateWarning.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'long' })}</p>
+              <p className="font-headline font-extrabold text-primary text-xl">
+                {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(duplicateWarning.amount)}
+              </p>
+            </div>
+            <p className="text-on-surface-variant text-sm">¿Quieres guardarlo de todas formas o cancelar?</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setDuplicateWarning(null); setPendingSave(false) }}
+                className="flex-1 py-3 rounded-xl bg-surface-container-highest text-on-surface font-semibold text-sm active:scale-95 transition-transform"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={doSave}
+                className="flex-1 py-3 rounded-xl bg-primary text-white font-semibold text-sm active:scale-95 transition-transform"
+              >
+                Guardar igual
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
         {/* Fixed Bottom Action */}
         <div className="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-background via-background/95 to-transparent">
