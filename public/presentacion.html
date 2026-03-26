@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>IDT Ledger — Presentación</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --orange:#a63500;--orange-dark:#7a2700;--orange-light:#d04400;
+    --cream:#fff8f6;--cream2:#ffe9e3;--brown:#281812;--muted:#5c4037;
+    --green:#005ea3;--red:#ba1a1a;
+  }
+  body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#fff;overflow:hidden;height:100vh}
+  .deck{width:100vw;height:100vh;position:relative}
+  .slide{
+    position:absolute;inset:0;display:flex;flex-direction:column;
+    opacity:0;pointer-events:none;transition:opacity .5s ease, transform .5s ease;
+    transform:translateX(60px);
+  }
+  .slide.active{opacity:1;pointer-events:all;transform:translateX(0)}
+  .slide.exit{opacity:0;transform:translateX(-60px)}
+
+  /* NAV */
+  .nav{
+    position:fixed;bottom:32px;left:50%;transform:translateX(-50%);
+    display:flex;align-items:center;gap:16px;z-index:100;
+    background:rgba(255,255,255,.08);backdrop-filter:blur(20px);
+    border:1px solid rgba(255,255,255,.12);border-radius:100px;padding:10px 20px;
+  }
+  .nav button{
+    width:36px;height:36px;border-radius:50%;border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-size:18px;
+    background:rgba(255,255,255,.1);color:#fff;transition:background .2s;
+  }
+  .nav button:hover{background:var(--orange)}
+  .dots{display:flex;gap:6px;align-items:center}
+  .dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);transition:all .3s;cursor:pointer}
+  .dot.active{width:20px;background:var(--orange)}
+  .slide-num{font-size:12px;color:rgba(255,255,255,.4);font-weight:600;min-width:40px;text-align:center}
+
+  /* SLIDE 1 — COVER */
+  .s1{background:linear-gradient(135deg,#1a0a04 0%,#2d1208 40%,#0d0d0d 100%)}
+  .s1-inner{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:60px;position:relative;overflow:hidden}
+  .s1-glow{position:absolute;width:600px;height:600px;background:radial-gradient(circle,rgba(166,53,0,.35) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+  .logo-wrap{display:flex;align-items:center;gap:20px}
+  .logo-box{width:72px;height:72px;border-radius:20px;overflow:hidden;box-shadow:0 8px 40px rgba(166,53,0,.5)}
+  .logo-box img{width:100%;height:100%;object-fit:contain}
+  .logo-title{font-family:'Manrope',sans-serif;font-size:48px;font-weight:900;letter-spacing:-1px}
+  .logo-title span{color:var(--orange)}
+  .tagline{font-size:18px;color:rgba(255,255,255,.55);font-weight:500;text-align:center;max-width:520px;line-height:1.6}
+  .badge-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  .badge{padding:8px 18px;border-radius:100px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+  .badge-orange{background:rgba(166,53,0,.25);border:1px solid rgba(166,53,0,.5);color:#ffb59c}
+  .badge-blue{background:rgba(0,94,163,.2);border:1px solid rgba(0,94,163,.4);color:#a1c9ff}
+  .badge-white{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7)}
+  .presented-by{font-size:13px;color:rgba(255,255,255,.3);margin-top:8px}
+
+  /* SLIDE 2 — PROBLEMA */
+  .s2{background:#0f0f0f}
+  .slide-inner{flex:1;display:flex;flex-direction:column;padding:64px 80px;max-width:1200px;margin:0 auto;width:100%;gap:40px}
+  .slide-label{font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--orange);margin-bottom:4px}
+  .slide-title{font-family:'Manrope',sans-serif;font-size:48px;font-weight:900;letter-spacing:-1.5px;line-height:1.1}
+  .slide-title span{color:var(--orange)}
+  .problems-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;flex:1;align-content:start}
+  .problem-card{
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+    border-radius:20px;padding:28px;display:flex;gap:16px;align-items:flex-start;
+    transition:border-color .3s;
+  }
+  .problem-card:hover{border-color:rgba(186,26,26,.4)}
+  .problem-icon{width:44px;height:44px;border-radius:14px;background:rgba(186,26,26,.15);border:1px solid rgba(186,26,26,.3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+  .problem-text h4{font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;margin-bottom:6px}
+  .problem-text p{font-size:13px;color:rgba(255,255,255,.5);line-height:1.5}
+  .problem-stat{font-size:11px;color:#ff8a70;font-weight:700;margin-top:8px;text-transform:uppercase;letter-spacing:.05em}
+
+  /* SLIDE 3 — SOLUCIÓN */
+  .s3{background:linear-gradient(160deg,#0d0d0d 0%,#150804 100%)}
+  .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .feature-card{
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+    border-radius:20px;padding:24px;transition:all .3s;
+  }
+  .feature-card:hover{border-color:rgba(166,53,0,.4);background:rgba(166,53,0,.06)}
+  .feature-icon{font-size:28px;margin-bottom:14px}
+  .feature-card h4{font-family:'Manrope',sans-serif;font-weight:700;font-size:15px;margin-bottom:8px}
+  .feature-card p{font-size:12px;color:rgba(255,255,255,.5);line-height:1.5}
+
+  /* SLIDE 4 — DEMO FLOW */
+  .s4{background:#0a0a0a}
+  .flow{display:flex;align-items:center;gap:0;flex:1;align-self:center;width:100%}
+  .flow-step{
+    flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+    border-radius:20px;padding:28px 20px;text-align:center;position:relative;
+  }
+  .flow-step .step-num{
+    width:32px;height:32px;border-radius:50%;background:var(--orange);
+    font-family:'Manrope',sans-serif;font-weight:800;font-size:14px;
+    display:flex;align-items:center;justify-content:center;margin:0 auto 16px;
+  }
+  .flow-step .step-icon{font-size:32px;margin-bottom:12px}
+  .flow-step h4{font-family:'Manrope',sans-serif;font-weight:700;font-size:14px;margin-bottom:8px}
+  .flow-step p{font-size:11px;color:rgba(255,255,255,.5);line-height:1.5}
+  .flow-arrow{color:rgba(166,53,0,.6);font-size:24px;padding:0 8px;flex-shrink:0}
+  .ai-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:100px;background:rgba(166,53,0,.2);border:1px solid rgba(166,53,0,.4);font-size:10px;font-weight:700;color:#ffb59c;text-transform:uppercase;letter-spacing:.08em;margin-top:8px}
+  .ai-dot{width:6px;height:6px;border-radius:50%;background:var(--orange);animation:pulse 1.5s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+  /* SLIDE 5 — SEGURIDAD */
+  .s5{background:#0a0f0a}
+  .security-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;flex:1}
+  .security-card{
+    background:rgba(0,94,163,.07);border:1px solid rgba(0,94,163,.2);
+    border-radius:20px;padding:28px;
+  }
+  .security-card.highlight{background:rgba(0,94,163,.12);border-color:rgba(0,94,163,.35)}
+  .sec-icon{font-size:28px;margin-bottom:12px}
+  .sec-title{font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;margin-bottom:10px;color:#a1c9ff}
+  .sec-list{list-style:none;display:flex;flex-direction:column;gap:7px}
+  .sec-list li{font-size:12px;color:rgba(255,255,255,.6);display:flex;gap:10px;align-items:flex-start;line-height:1.4}
+  .sec-list li::before{content:"✓";color:#4caf82;font-weight:700;flex-shrink:0;margin-top:1px}
+  .hosting-note{
+    background:rgba(0,94,163,.1);border:1px solid rgba(0,94,163,.25);
+    border-radius:16px;padding:20px 24px;display:flex;gap:16px;align-items:center;
+  }
+  .hosting-note p{font-size:13px;color:rgba(255,255,255,.65);line-height:1.5}
+  .hosting-note strong{color:#a1c9ff}
+
+  /* SLIDE 6 — AHORRO */
+  .s6{background:#0f0a00}
+  .comparison{display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:start}
+  .comp-col{border-radius:24px;padding:32px;display:flex;flex-direction:column;gap:16px}
+  .comp-col.bad{background:rgba(186,26,26,.08);border:1px solid rgba(186,26,26,.2)}
+  .comp-col.good{background:rgba(0,94,163,.08);border:1px solid rgba(0,94,163,.25)}
+  .comp-header{font-family:'Manrope',sans-serif;font-weight:800;font-size:17px;display:flex;align-items:center;gap:10px}
+  .comp-header.bad-h{color:#ff8a70}
+  .comp-header.good-h{color:#a1c9ff}
+  .comp-item{font-size:13px;color:rgba(255,255,255,.6);display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+  .comp-item:last-child{border-bottom:none}
+  .comp-item span{font-weight:700;color:rgba(255,255,255,.85);white-space:nowrap}
+  .vs-circle{
+    width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;
+    font-family:'Manrope',sans-serif;font-weight:800;font-size:13px;color:rgba(255,255,255,.4);
+    align-self:center;margin-top:60px;flex-shrink:0;
+  }
+  .savings-banner{
+    background:linear-gradient(135deg,rgba(166,53,0,.2),rgba(208,68,0,.15));
+    border:1px solid rgba(166,53,0,.35);border-radius:16px;
+    padding:20px 28px;display:flex;justify-content:space-between;align-items:center;
+  }
+  .savings-banner h3{font-family:'Manrope',sans-serif;font-weight:800;font-size:17px}
+  .savings-banner .big-save{font-family:'Manrope',sans-serif;font-weight:900;font-size:28px;color:#ffb59c}
+
+  /* SLIDE 7 — PRECIO */
+  .s7{background:linear-gradient(160deg,#0d0d0d 0%,#150804 100%)}
+  .pricing-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;flex:1}
+  .price-card{
+    border-radius:24px;padding:36px;display:flex;flex-direction:column;gap:20px;
+    border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);
+  }
+  .price-card.featured{
+    background:linear-gradient(160deg,rgba(166,53,0,.15),rgba(208,68,0,.08));
+    border-color:rgba(166,53,0,.4);position:relative;overflow:hidden;
+  }
+  .price-card.featured::before{
+    content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;
+    background:radial-gradient(circle,rgba(166,53,0,.3),transparent 70%);
+  }
+  .price-top{display:flex;justify-content:space-between;align-items:flex-start}
+  .price-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.4)}
+  .price-badge-feat{
+    font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+    background:var(--orange);color:#fff;padding:4px 10px;border-radius:100px;
+  }
+  .price-amount{font-family:'Manrope',sans-serif;font-weight:900;font-size:52px;letter-spacing:-2px;line-height:1}
+  .price-amount sup{font-size:24px;font-weight:700;vertical-align:super;letter-spacing:0}
+  .price-amount sub{font-size:16px;font-weight:600;color:rgba(255,255,255,.5);letter-spacing:0}
+  .price-desc{font-size:13px;color:rgba(255,255,255,.5);line-height:1.5}
+  .price-includes{list-style:none;display:flex;flex-direction:column;gap:9px;margin-top:4px}
+  .price-includes li{font-size:12px;color:rgba(255,255,255,.65);display:flex;gap:10px;align-items:flex-start}
+  .price-includes li::before{content:"✓";color:#ffb59c;font-weight:700;flex-shrink:0}
+  .total-band{
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+    border-radius:16px;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;
+  }
+  .total-band p{font-size:13px;color:rgba(255,255,255,.5)}
+  .total-band strong{font-family:'Manrope',sans-serif;font-weight:800;font-size:20px;color:#fff}
+  .pay-note{font-size:12px;color:rgba(255,255,255,.35);text-align:center}
+
+  /* SLIDE 8 — CIERRE */
+  .s8{background:linear-gradient(135deg,#1a0a04 0%,#0a0a0a 100%)}
+  .s8-inner{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:36px;padding:60px;text-align:center;position:relative;overflow:hidden}
+  .s8-glow{position:absolute;width:700px;height:700px;background:radial-gradient(circle,rgba(166,53,0,.2) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+  .s8-title{font-family:'Manrope',sans-serif;font-size:54px;font-weight:900;letter-spacing:-2px;line-height:1.1;position:relative}
+  .s8-title span{color:var(--orange)}
+  .s8-sub{font-size:18px;color:rgba(255,255,255,.5);max-width:560px;line-height:1.6;position:relative}
+  .cta-box{
+    background:linear-gradient(135deg,rgba(166,53,0,.2),rgba(208,68,0,.12));
+    border:1px solid rgba(166,53,0,.4);border-radius:24px;
+    padding:32px 48px;display:flex;flex-direction:column;gap:8px;position:relative;
+    min-width:420px;
+  }
+  .cta-box h3{font-family:'Manrope',sans-serif;font-weight:800;font-size:20px}
+  .cta-box p{font-size:14px;color:rgba(255,255,255,.55)}
+  .cta-url{
+    font-family:'Manrope',sans-serif;font-weight:700;font-size:15px;
+    color:#ffb59c;letter-spacing:.02em;margin-top:4px;
+  }
+  .live-dot{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:100px;background:rgba(0,200,100,.1);border:1px solid rgba(0,200,100,.25);font-size:12px;font-weight:700;color:#4cda8a;text-transform:uppercase;letter-spacing:.08em}
+  .live-dot-pulse{width:7px;height:7px;border-radius:50%;background:#4cda8a;animation:pulse 1.5s infinite}
+  .s8-stats{display:flex;gap:48px;position:relative}
+  .s8-stat{text-align:center}
+  .s8-stat-val{font-family:'Manrope',sans-serif;font-weight:900;font-size:36px;color:#ffb59c}
+  .s8-stat-label{font-size:12px;color:rgba(255,255,255,.4);margin-top:4px;text-transform:uppercase;letter-spacing:.08em}
+
+  kbd{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:2px 8px;font-size:11px;font-family:'Inter',sans-serif}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: COVER -->
+  <div class="slide s1 active" id="slide-0">
+    <div class="s1-inner">
+      <div class="s1-glow"></div>
+      <div class="badge-row">
+        <div class="live-dot"><span class="live-dot-pulse"></span>En producción</div>
+      </div>
+      <div class="logo-wrap">
+        <div class="logo-box">
+          <img src="/icons/icon.png" alt="IDT"/>
+        </div>
+        <div class="logo-title">IDT <span>Ledger</span></div>
+      </div>
+      <p class="tagline">Gestión inteligente de gastos empresariales con inteligencia artificial — desarrollado internamente para INDET Group.</p>
+      <div class="badge-row">
+        <div class="badge badge-orange">Inteligencia Artificial</div>
+        <div class="badge badge-blue">100% Seguro</div>
+        <div class="badge badge-white">PWA · Instalable en móvil</div>
+        <div class="badge badge-white">Exportación Excel &amp; PDF</div>
+      </div>
+      <p class="presented-by">Desarrollado por Sebastián Canal · INDET Group · 2026</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: PROBLEMA -->
+  <div class="slide s2" id="slide-1">
+    <div class="slide-inner">
+      <div>
+        <p class="slide-label">El problema actual</p>
+        <h2 class="slide-title">El proceso de hoy<br/><span>cuesta dinero y tiempo</span></h2>
+      </div>
+      <div class="problems-grid">
+        <div class="problem-card">
+          <div class="problem-icon">🗂️</div>
+          <div class="problem-text">
+            <h4>Tickets perdidos o sin justificante</h4>
+            <p>Los empleados guardan tickets en papel que se pierden, se deterioran o simplemente se olvidan de entregar.</p>
+            <p class="problem-stat">→ Gastos no justificados = riesgo fiscal</p>
+          </div>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">⏱️</div>
+          <div class="problem-text">
+            <h4>Transcripción manual lenta</h4>
+            <p>Alguien tiene que introducir cada ticket a mano en un Excel: fecha, proveedor, importe, IVA. Una a una.</p>
+            <p class="problem-stat">→ 30–60 min/semana por empleado</p>
+          </div>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">📊</div>
+          <div class="problem-text">
+            <h4>Sin visibilidad en tiempo real</h4>
+            <p>El administrador no sabe cuánto se está gastando hasta que alguien recopila los datos manualmente al final del mes.</p>
+            <p class="problem-stat">→ Decisiones sin datos actualizados</p>
+          </div>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">🔄</div>
+          <div class="problem-text">
+            <h4>Sin trazabilidad ni control</h4>
+            <p>No hay forma de saber quién gastó qué, cuándo, ni si el gasto fue aprobado o rechazado formalmente.</p>
+            <p class="problem-stat">→ Sin auditoría = sin control</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: SOLUCIÓN -->
+  <div class="slide s3" id="slide-2">
+    <div class="slide-inner">
+      <div>
+        <p class="slide-label">La solución</p>
+        <h2 class="slide-title">IDT Ledger resuelve<br/><span>todo eso automáticamente</span></h2>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">📷</div>
+          <h4>Escaneo con IA</h4>
+          <p>El empleado fotografía el ticket. La inteligencia artificial extrae proveedor, fecha, importe e IVA al instante. Sin escribir nada.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">☁️</div>
+          <h4>Almacenamiento en la nube</h4>
+          <p>Cada ticket queda guardado con su foto original en la nube. Accesible siempre, desde cualquier dispositivo.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👨‍💼</div>
+          <h4>Panel de administrador</h4>
+          <p>Vista agrupada por empleado. El admin aprueba o rechaza cada gasto con un clic. Sin emails, sin Excel manual.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📤</div>
+          <h4>Exportación profesional</h4>
+          <p>Informe de gastos en Excel formateado o PDF con marca IDT, totales, IVA y estado de cada ticket.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📱</div>
+          <h4>App instalable en móvil</h4>
+          <p>Se instala como app nativa en iOS y Android. Funciona sin internet. No requiere App Store ni Google Play.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👥</div>
+          <h4>Gestión de usuarios</h4>
+          <p>El administrador invita empleados directamente desde la app. Sin acceso a bases de datos ni configuración técnica.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: CÓMO FUNCIONA -->
+  <div class="slide s4" id="slide-3">
+    <div class="slide-inner">
+      <div>
+        <p class="slide-label">Flujo de trabajo</p>
+        <h2 class="slide-title">De ticket en papel<br/><span>a informe aprobado en segundos</span></h2>
+      </div>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="step-num">1</div>
+          <div class="step-icon">📷</div>
+          <h4>Empleado fotografía el ticket</h4>
+          <p>Abre la app, apunta la cámara y pulsa capturar</p>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-num">2</div>
+          <div class="step-icon">🤖</div>
+          <h4>IA analiza el ticket</h4>
+          <p>Gemini AI lee y extrae todos los datos automáticamente</p>
+          <div class="ai-badge"><span class="ai-dot"></span>Gemini AI</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-num">3</div>
+          <div class="step-icon">✅</div>
+          <h4>Empleado confirma y envía</h4>
+          <p>Revisa los datos, los ajusta si hace falta y guarda</p>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-num">4</div>
+          <div class="step-icon">👨‍💼</div>
+          <h4>Admin aprueba</h4>
+          <p>Ve el gasto en su panel y lo aprueba o rechaza</p>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-num">5</div>
+          <div class="step-icon">📊</div>
+          <h4>Informe listo</h4>
+          <p>Exporta a Excel o PDF con un clic</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: SEGURIDAD -->
+  <div class="slide s5" id="slide-4">
+    <div class="slide-inner">
+      <div>
+        <p class="slide-label">Seguridad y fiabilidad</p>
+        <h2 class="slide-title">Vuestros datos<br/><span>completamente protegidos</span></h2>
+      </div>
+      <div class="security-grid">
+        <div class="security-card">
+          <div class="sec-icon">🔐</div>
+          <div class="sec-title">Autenticación y acceso</div>
+          <ul class="sec-list">
+            <li>Contraseñas cifradas con bcrypt — nadie las puede leer</li>
+            <li>Tokens JWT de corta duración — sesiones seguras</li>
+            <li>Roles estrictos: empleado solo ve sus propios datos</li>
+            <li>Un empleado no puede convertirse en administrador</li>
+          </ul>
+        </div>
+        <div class="security-card">
+          <div class="sec-icon">🛡️</div>
+          <div class="sec-title">Protección de la base de datos</div>
+          <ul class="sec-list">
+            <li>Row Level Security (RLS) — cada usuario solo accede a sus registros</li>
+            <li>La clave de administración nunca sale del servidor</li>
+            <li>Servidor en la Unión Europea (Frankfurt)</li>
+            <li>Cifrado en reposo y en tránsito (HTTPS)</li>
+          </ul>
+        </div>
+        <div class="security-card highlight">
+          <div class="sec-icon">📋</div>
+          <div class="sec-title">Registro de auditoría</div>
+          <ul class="sec-list">
+            <li>Cada acción queda registrada: quién, qué y cuándo</li>
+            <li>Historial inmutable — nadie puede borrarlo</li>
+            <li>Trazabilidad completa de aprobaciones y rechazos</li>
+            <li>Si algo sale mal, hay evidencia exacta de qué ocurrió</li>
+          </ul>
+        </div>
+        <div class="security-card">
+          <div class="sec-icon">🌐</div>
+          <div class="sec-title">Infraestructura</div>
+          <ul class="sec-list">
+            <li>Vercel Edge Network — protección DDoS incluida</li>
+            <li>Supabase — infraestructura usada por Fortune 500</li>
+            <li>SSL automático, sin configuración manual</li>
+            <li>Copias de seguridad automáticas diarias</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: AHORRO -->
+  <div class="slide s6" id="slide-5">
+    <div class="slide-inner">
+      <div>
+        <p class="slide-label">Retorno de inversión</p>
+        <h2 class="slide-title">Lo que ahorráis<br/><span>desde el primer mes</span></h2>
+      </div>
+      <div class="comparison">
+        <div class="comp-col bad">
+          <div class="comp-header bad-h">❌ Software externo equivalente</div>
+          <div class="comp-item">Rydoo / Expensify (10 usuarios)<span>€150–300/mes</span></div>
+          <div class="comp-item">Implementación y configuración<span>€500–1.000</span></div>
+          <div class="comp-item">Datos en servidores de EEUU<span>Riesgo GDPR</span></div>
+          <div class="comp-item">Sin personalización IDT<span>—</span></div>
+          <div class="comp-item">Dependéis de un tercero<span>Siempre</span></div>
+          <div class="comp-item">Desarrollo a medida (agencia)<span>€8.000–15.000</span></div>
+        </div>
+        <div class="vs-circle">VS</div>
+        <div class="comp-col good">
+          <div class="comp-header good-h">✅ IDT Ledger — solución propia</div>
+          <div class="comp-item">Coste mensual de herramienta<span>€30/mes</span></div>
+          <div class="comp-item">Soporte y mantenimiento<span>€70/mes</span></div>
+          <div class="comp-item">Datos en servidores EU (Frankfurt)<span>GDPR ✓</span></div>
+          <div class="comp-item">100% personalizado para IDT<span>✓</span></div>
+          <div class="comp-item">El código es vuestro para siempre<span>✓</span></div>
+          <div class="comp-item">Inversión inicial de desarrollo<span>€1.250 (una vez)</span></div>
+        </div>
+      </div>
+      <div class="savings-banner">
+        <div>
+          <h3>Ahorro frente a software externo</h3>
+          <p style="font-size:13px;color:rgba(255,255,255,.5);margin-top:4px">En el primer año, comparado con cualquier herramienta equivalente del mercado</p>
+        </div>
+        <div class="big-save">€50–200/mes</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: PRECIO -->
+  <div class="slide s7" id="slide-6">
+    <div class="slide-inner">
+      <div>
+        <p class="slide-label">Propuesta económica</p>
+        <h2 class="slide-title">Inversión<br/><span>clara y transparente</span></h2>
+      </div>
+      <div class="pricing-grid">
+        <div class="price-card featured">
+          <div class="price-top">
+            <p class="price-label">Desarrollo</p>
+            <div class="price-badge-feat">Pago único</div>
+          </div>
+          <div class="price-amount"><sup>€</sup>1.250</div>
+          <p class="price-desc">Por el desarrollo completo de la aplicación, realizado íntegramente fuera del horario laboral.</p>
+          <ul class="price-includes">
+            <li>Escáner IA con Gemini</li>
+            <li>Panel admin con aprobaciones</li>
+            <li>Gestión de usuarios integrada</li>
+            <li>Exportación Excel y PDF profesional</li>
+            <li>PWA instalable en móvil</li>
+            <li>Sistema de auditoría y seguridad</li>
+            <li>Código fuente en GitHub (vuestro)</li>
+          </ul>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="price-card">
+            <div class="price-top">
+              <p class="price-label">Herramienta</p>
+              <div style="font-size:10px;color:rgba(255,255,255,.3);font-weight:600;text-transform:uppercase">Mensual</div>
+            </div>
+            <div class="price-amount" style="font-size:38px"><sup style="font-size:18px">€</sup>30<sub>/mes</sub></div>
+            <p class="price-desc" style="font-size:12px">Infraestructura cloud (Vercel + Supabase). Hosting, base de datos, almacenamiento de imágenes y servidor de IA.</p>
+          </div>
+          <div class="price-card">
+            <div class="price-top">
+              <p class="price-label">Soporte y mantenimiento</p>
+              <div style="font-size:10px;color:rgba(255,255,255,.3);font-weight:600;text-transform:uppercase">Mensual</div>
+            </div>
+            <div class="price-amount" style="font-size:38px"><sup style="font-size:18px">€</sup>70<sub>/mes</sub></div>
+            <p class="price-desc" style="font-size:12px">Resolución de incidencias, actualizaciones de seguridad, mejoras y nuevas funcionalidades según necesidad.</p>
+          </div>
+          <div class="total-band">
+            <p>Total mensual (a partir del mes 1)</p>
+            <strong>€100 / mes</strong>
+          </div>
+        </div>
+      </div>
+      <p class="pay-note">El pago del desarrollo se gestiona como gratificación extraordinaria en nómina · Los costes mensuales se facturan mensualmente</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: CIERRE -->
+  <div class="slide s8" id="slide-7">
+    <div class="s8-inner">
+      <div class="s8-glow"></div>
+      <div class="live-dot" style="position:relative"><span class="live-dot-pulse"></span>Disponible ahora mismo</div>
+      <h2 class="s8-title">La app está lista.<br/><span>Podéis usarla hoy.</span></h2>
+      <p class="s8-sub">No es un prototipo. No es una demo. Es una aplicación real, desplegada en producción, con datos reales y lista para escalar.</p>
+      <div class="s8-stats">
+        <div class="s8-stat">
+          <div class="s8-stat-val">IA</div>
+          <div class="s8-stat-label">Gemini 2.5</div>
+        </div>
+        <div class="s8-stat">
+          <div class="s8-stat-val">EU</div>
+          <div class="s8-stat-label">Datos en Europa</div>
+        </div>
+        <div class="s8-stat">
+          <div class="s8-stat-val">PWA</div>
+          <div class="s8-stat-label">Instalable móvil</div>
+        </div>
+        <div class="s8-stat">
+          <div class="s8-stat-val">24/7</div>
+          <div class="s8-stat-label">Disponibilidad</div>
+        </div>
+      </div>
+      <div class="cta-box">
+        <h3>Pruébala ahora mismo</h3>
+        <p>Escanea un ticket en menos de 30 segundos</p>
+        <div class="cta-url">app-scanner-theta.vercel.app</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- NAVIGATION -->
+<div class="nav">
+  <button id="prev" onclick="changeSlide(-1)">←</button>
+  <div class="dots" id="dots"></div>
+  <button id="next" onclick="changeSlide(1)">→</button>
+  <span class="slide-num" id="slideNum">1 / 8</span>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide')
+  const dotsEl = document.getElementById('dots')
+  const slideNum = document.getElementById('slideNum')
+  let current = 0
+
+  // Build dots
+  slides.forEach((_, i) => {
+    const d = document.createElement('div')
+    d.className = 'dot' + (i === 0 ? ' active' : '')
+    d.onclick = () => goTo(i)
+    dotsEl.appendChild(d)
+  })
+
+  function goTo(n) {
+    slides[current].classList.remove('active')
+    slides[current].classList.add('exit')
+    setTimeout(() => slides[current].classList.remove('exit'), 500)
+    current = (n + slides.length) % slides.length
+    slides[current].classList.add('active')
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current))
+    slideNum.textContent = (current + 1) + ' / ' + slides.length
+  }
+
+  function changeSlide(dir) { goTo(current + dir) }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') changeSlide(1)
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') changeSlide(-1)
+  })
+
+  // Touch/swipe
+  let tx = 0
+  document.addEventListener('touchstart', e => tx = e.touches[0].clientX)
+  document.addEventListener('touchend', e => {
+    const diff = tx - e.changedTouches[0].clientX
+    if (Math.abs(diff) > 50) changeSlide(diff > 0 ? 1 : -1)
+  })
+</script>
+</body>
+</html>
