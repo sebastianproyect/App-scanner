@@ -30,7 +30,7 @@ export default function Login() {
         <div className="flex flex-col items-center mb-10">
           <img src="/icons/icon.png" alt="IDT" className="w-16 h-16 rounded-2xl object-contain mb-4 shadow-lg" />
           <h1 className="font-headline font-extrabold text-3xl text-on-surface tracking-tight">
-            IDT Ledger
+            Indet Scanner
           </h1>
           <p className="text-on-surface-variant text-sm mt-1">Control de gastos empresarial</p>
         </div>

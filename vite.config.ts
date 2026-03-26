@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/icon.png', 'icons/icon.svg'],
       manifest: {
-        name: 'Scanner Indet',
-        short_name: 'Scanner Indet',
+        name: 'Indet Scanner',
+        short_name: 'Indet Scanner',
         description: 'Gestión de gastos empresariales — INDET Group',
         theme_color: '#a63500',
         background_color: '#ffffff',

@@ -206,7 +206,7 @@ export default function History() {
       doc.setFontSize(7)
       doc.setTextColor(150)
       doc.setFont('helvetica', 'normal')
-      doc.text(`IDT Ledger — Informe confidencial`, 14, 290)
+      doc.text(`Indet Scanner — Informe confidencial`, 14, 290)
       doc.text(`Página ${i} de ${pageCount}`, pageW - 14, 290, { align: 'right' })
     }
 
@@ -215,7 +215,7 @@ export default function History() {
 
   async function exportToExcel() {
     const wb = new ExcelJS.Workbook()
-    wb.creator = 'IDT Ledger'
+    wb.creator = 'Indet Scanner'
     wb.created = new Date()
 
     const ws = wb.addWorksheet('Tickets IDT', {
@@ -381,7 +381,7 @@ export default function History() {
     const footerRowIdx = 7 + filtered.length
     ws.mergeCells(footerRowIdx, 1, footerRowIdx, colCount)
     const footerCell = ws.getCell(`A${footerRowIdx}`)
-    footerCell.value = `IDT Ledger — INDET Group · Informe confidencial · ${today}`
+    footerCell.value = `Indet Scanner — INDET Group · Informe confidencial · ${today}`
     footerCell.font = { size: 8, italic: true, color: { argb: 'FFAAAAAA' } }
     footerCell.alignment = { horizontal: 'center' }
     ws.getRow(footerRowIdx).height = 18
