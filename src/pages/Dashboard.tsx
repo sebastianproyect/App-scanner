@@ -1,41 +1,97 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend,
+} from 'recharts'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Receipt } from '../lib/types'
+
+const CHART_COLORS = ['#a63500', '#d04400', '#e8845c', '#f5b89a', '#fbdcd3', '#7a2700']
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user, profile, signOut } = useAuth()
   const isAdmin = profile?.role === 'admin'
   const [receipts, setReceipts] = useState<Receipt[]>([])
+  const [allReceipts, setAllReceipts] = useState<Receipt[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!user || !profile) return
-    let query = supabase
+
+    // Recent tickets (for the list)
+    let recentQ = supabase
       .from('receipts')
       .select('*, categories(id, name, icon)')
       .order('created_at', { ascending: false })
       .limit(20)
-    if (!isAdmin) query = query.eq('user_id', user.id)
-    query.then(({ data }) => {
+    if (!isAdmin) recentQ = recentQ.eq('user_id', user.id)
+    recentQ.then(({ data }) => {
       if (data) setReceipts(data as Receipt[])
       setLoading(false)
     })
+
+    // All tickets for charts (lightweight fields)
+    let chartQ = supabase
+      .from('receipts')
+      .select('id, amount, date, created_at, status, categories(name)')
+    if (!isAdmin) chartQ = chartQ.eq('user_id', user.id)
+    chartQ.then(({ data }) => {
+      if (data) setAllReceipts(data as unknown as Receipt[])
+    })
   }, [user, profile])
 
-  const totalExpenses = receipts.reduce((s, r) => s + Number(r.amount), 0)
-  const pendingCount  = receipts.filter(r => r.status === 'pending').length
+  const totalExpenses = allReceipts.reduce((s, r) => s + Number(r.amount), 0)
+  const pendingCount  = allReceipts.filter(r => r.status === 'pending').length
   const currentMonth  = new Date().toLocaleString('es-MX', { month: 'long', year: 'numeric' })
 
   function formatCurrency(n: number) {
     return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n)
   }
-
   function formatDate(d: string) {
     return new Date(d).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
   }
+
+  // --- Chart data ---
+  // Last 6 months bar chart
+  const monthlyData = (() => {
+    const now = new Date()
+    const months: { label: string; key: string; total: number }[] = []
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      months.push({
+        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+        label: d.toLocaleString('es-ES', { month: 'short' }),
+        total: 0,
+      })
+    }
+    allReceipts.forEach(r => {
+      const key = r.date?.slice(0, 7)
+      const m = months.find(m => m.key === key)
+      if (m) m.total += Number(r.amount)
+    })
+    return months
+  })()
+
+  // By category pie chart
+  const categoryData = (() => {
+    const map: Record<string, number> = {}
+    allReceipts.forEach(r => {
+      const cat = (r.categories as { name: string } | null)?.name ?? 'Otros'
+      map[cat] = (map[cat] ?? 0) + Number(r.amount)
+    })
+    return Object.entries(map)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+  })()
+
+  const thisMonthCount = allReceipts.filter(r => {
+    const d = new Date(r.created_at)
+    const now = new Date()
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+  }).length
 
   const STATUS_STYLES: Record<string, string> = {
     pending: 'bg-secondary-container text-on-secondary-container',
@@ -138,7 +194,6 @@ export default function Dashboard() {
 
         {/* Stats Bento */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12">
-          {/* Total expenses */}
           <div className="md:col-span-2 p-8 rounded-[1.5rem] bg-surface-container-low flex flex-col justify-between relative overflow-hidden group">
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-8">
@@ -146,7 +201,7 @@ export default function Dashboard() {
                   <span className="material-symbols-outlined text-primary">payments</span>
                 </div>
                 <span className="text-on-surface-variant text-sm font-medium">
-                  {receipts.length} ticket{receipts.length !== 1 ? 's' : ''}
+                  {allReceipts.length} ticket{allReceipts.length !== 1 ? 's' : ''}
                 </span>
               </div>
               <div>
@@ -161,7 +216,6 @@ export default function Dashboard() {
             <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors" />
           </div>
 
-          {/* Pending */}
           <div className="p-8 rounded-[1.5rem] bg-on-background text-on-primary-container flex flex-col justify-between">
             <div>
               <span className="material-symbols-outlined text-primary-fixed mb-4">hourglass_empty</span>
@@ -178,27 +232,120 @@ export default function Dashboard() {
             </button>
           </div>
 
-          {/* This month count */}
           <div className="p-8 rounded-[1.5rem] bg-surface-container flex flex-col justify-between border border-outline-variant/10">
             <div>
               <span className="material-symbols-outlined text-on-surface-variant mb-4">receipt_long</span>
               <p className="text-on-surface-variant text-sm font-medium mb-1">Este mes</p>
               <h3 className="font-headline font-extrabold text-3xl">
-                {loading ? '—' : receipts.filter(r => {
-                  const d = new Date(r.created_at)
-                  const now = new Date()
-                  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-                }).length}
+                {loading ? '—' : thisMonthCount}
               </h3>
             </div>
             <div className="w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
               <div
                 className="bg-primary h-full transition-all"
-                style={{ width: receipts.length > 0 ? `${Math.min(100, (receipts.length / 50) * 100)}%` : '0%' }}
+                style={{ width: allReceipts.length > 0 ? `${Math.min(100, (allReceipts.length / 50) * 100)}%` : '0%' }}
               />
             </div>
           </div>
         </div>
+
+        {/* Charts */}
+        {!loading && allReceipts.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-12">
+            {/* Bar chart: monthly */}
+            <div className="lg:col-span-3 p-6 rounded-[1.5rem] bg-surface-container-low">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <p className="text-on-surface-variant text-xs font-semibold uppercase tracking-widest mb-1">Últimos 6 meses</p>
+                  <h4 className="font-headline font-bold text-lg">Evolución de gastos</h4>
+                </div>
+                <div className="p-2.5 bg-surface-container-highest rounded-xl">
+                  <span className="material-symbols-outlined text-primary text-[20px]">bar_chart</span>
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={monthlyData} barSize={28} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 12, fill: '#9e7b6e', fontFamily: 'Inter, sans-serif' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis hide />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(166,53,0,0.06)', radius: 8 }}
+                    contentStyle={{
+                      background: '#fff8f6',
+                      border: '1px solid #e5beb2',
+                      borderRadius: '12px',
+                      fontSize: '13px',
+                      fontFamily: 'Inter, sans-serif',
+                    }}
+                    formatter={(v) => [formatCurrency(Number(v)), 'Gastos']}
+                  />
+                  <Bar dataKey="total" fill="#a63500" radius={[8, 8, 0, 0]}>
+                    {monthlyData.map((entry, i) => {
+                      const isCurrentMonth = entry.key === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
+                      return <Cell key={i} fill={isCurrentMonth ? '#a63500' : '#e8845c'} />
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Pie chart: by category */}
+            <div className="lg:col-span-2 p-6 rounded-[1.5rem] bg-surface-container-low">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <p className="text-on-surface-variant text-xs font-semibold uppercase tracking-widest mb-1">Por categoría</p>
+                  <h4 className="font-headline font-bold text-lg">Distribución</h4>
+                </div>
+                <div className="p-2.5 bg-surface-container-highest rounded-xl">
+                  <span className="material-symbols-outlined text-primary text-[20px]">donut_large</span>
+                </div>
+              </div>
+              {categoryData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={3}
+                    >
+                      {categoryData.map((_, i) => (
+                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        background: '#fff8f6',
+                        border: '1px solid #e5beb2',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontFamily: 'Inter, sans-serif',
+                      }}
+                      formatter={(v) => [formatCurrency(Number(v)), '']}
+                    />
+                    <Legend
+                      iconType="circle"
+                      iconSize={8}
+                      wrapperStyle={{ fontSize: '11px', fontFamily: 'Inter, sans-serif' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[200px] flex items-center justify-center text-on-surface-variant/40 text-sm">
+                  Sin datos suficientes
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Recent Transactions */}
         <div className="space-y-6">
