@@ -33,10 +33,14 @@ export default function Dashboard() {
       setLoading(false)
     })
 
-    // All tickets for charts (lightweight fields)
+    // All tickets for charts — limited to last 6 months
+    const sixMonthsAgo = new Date()
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+    const sixMonthsAgoStr = sixMonthsAgo.toISOString().split('T')[0]
     let chartQ = supabase
       .from('receipts')
       .select('id, amount, date, created_at, status, categories(name)')
+      .gte('date', sixMonthsAgoStr)
     if (!isAdmin) chartQ = chartQ.eq('user_id', user.id)
     chartQ.then(({ data }) => {
       if (data) setAllReceipts(data as unknown as Receipt[])
@@ -166,12 +170,9 @@ export default function Dashboard() {
         {/* Title */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-tertiary/10 text-tertiary mb-4">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-tertiary" />
-              </span>
-              <span className="text-[11px] font-bold uppercase tracking-widest font-label">En vivo</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-highest text-on-surface-variant mb-4">
+              <span className="material-symbols-outlined text-[14px]">update</span>
+              <span className="text-[11px] font-bold uppercase tracking-widest font-label">Actualizado ahora</span>
             </div>
             <h2 className="font-headline font-extrabold text-4xl md:text-5xl text-on-surface tracking-tight">
               Dashboard

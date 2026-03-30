@@ -27,9 +27,13 @@ export default function History() {
   const { user, profile, signOut } = useAuth()
   const isAdmin = profile?.role === 'admin'
 
+  const PAGE_SIZE = 50
+
   const [receipts, setReceipts] = useState<Receipt[]>([])
   const [profilesMap, setProfilesMap] = useState<Record<string, Profile>>({})
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
   const [fetchError, setFetchError] = useState('')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -49,22 +53,19 @@ export default function History() {
       .from('receipts')
       .select('*, categories(id, name, icon)')
       .order('created_at', { ascending: false })
+      .range(0, PAGE_SIZE - 1)
 
-    // Employee: only sees their own tickets
-    if (!isAdmin) {
-      query = query.eq('user_id', user!.id)
-    }
+    if (!isAdmin) query = query.eq('user_id', user!.id)
 
     const { data, error } = await query
 
     if (error) {
-      console.error('Error cargando recibos:', error.message)
       setFetchError(`Error al cargar tickets: ${error.message}`)
     } else if (data) {
       setReceipts(data as Receipt[])
+      setHasMore(data.length === PAGE_SIZE)
     }
 
-    // Admin: also fetch all profiles to show submitter names
     if (isAdmin) {
       const { data: profilesData } = await supabase.from('profiles').select('id, full_name, role')
       if (profilesData) {
@@ -75,6 +76,24 @@ export default function History() {
     }
 
     setLoading(false)
+  }
+
+  async function loadMore() {
+    setLoadingMore(true)
+    let query = supabase
+      .from('receipts')
+      .select('*, categories(id, name, icon)')
+      .order('created_at', { ascending: false })
+      .range(receipts.length, receipts.length + PAGE_SIZE - 1)
+
+    if (!isAdmin) query = query.eq('user_id', user!.id)
+
+    const { data } = await query
+    if (data) {
+      setReceipts(prev => [...prev, ...data as Receipt[]])
+      setHasMore(data.length === PAGE_SIZE)
+    }
+    setLoadingMore(false)
   }
 
   const filtered = receipts.filter(r => {
@@ -90,16 +109,18 @@ export default function History() {
       .from('receipts')
       .update({ status: newStatus })
       .eq('id', receiptId)
-    if (!error) {
-      setReceipts(prev => prev.map(r => r.id === receiptId ? { ...r, status: newStatus as Receipt['status'] } : r))
-      await writeAuditLog('status_changed', receiptId, {
-        old_status: receipt.status,
-        new_status: newStatus,
-        vendor: receipt.vendor,
-        amount: receipt.amount,
-        receipt_user_id: receipt.user_id,
-      })
+    if (error) {
+      setFetchError('Error al cambiar el estado. Intenta de nuevo.')
+      return
     }
+    setReceipts(prev => prev.map(r => r.id === receiptId ? { ...r, status: newStatus as Receipt['status'] } : r))
+    await writeAuditLog('status_changed', receiptId, {
+      old_status: receipt.status,
+      new_status: newStatus,
+      vendor: receipt.vendor,
+      amount: receipt.amount,
+      receipt_user_id: receipt.user_id,
+    })
   }
 
   function getImageUrl(path: string): string {
@@ -530,15 +551,18 @@ export default function History() {
               }
             </span>
             <h2 className="text-3xl font-headline font-extrabold text-on-surface mt-1">
-              {isAdmin ? 'Todos los tickets' : 'Tus envíos de hoy'}
+              {isAdmin ? 'Todos los tickets' : 'Tus tickets'}
             </h2>
           </div>
           <button
             onClick={fetchReceipts}
-            className="p-2 rounded-full hover:bg-surface-container-highest transition-colors"
+            disabled={loading}
+            className="p-2 rounded-full hover:bg-surface-container-highest transition-colors disabled:opacity-40"
             title="Actualizar"
           >
-            <span className="material-symbols-outlined text-on-surface-variant">refresh</span>
+            <span className={`material-symbols-outlined text-on-surface-variant ${loading ? 'animate-spin' : ''}`}>
+              refresh
+            </span>
           </button>
         </div>
 
@@ -732,6 +756,23 @@ export default function History() {
                 </div>
               )
             })}
+          </div>
+        )}
+
+        {/* Cargar más */}
+        {hasMore && !loading && (
+          <div className="mt-8 flex justify-center">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-surface-container text-on-surface font-semibold text-sm hover:bg-surface-container-highest transition-colors disabled:opacity-50"
+            >
+              {loadingMore ? (
+                <><span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>Cargando...</>
+              ) : (
+                <><span className="material-symbols-outlined text-[18px]">expand_more</span>Cargar más tickets</>
+              )}
+            </button>
           </div>
         )}
       </main>

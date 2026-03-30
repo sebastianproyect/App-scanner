@@ -52,6 +52,7 @@ export default function ReviewReceipt() {
   const [aiDone, setAiDone] = useState(false)
   const [duplicateWarning, setDuplicateWarning] = useState<{ vendor: string; date: string; amount: number } | null>(null)
   const [pendingSave, setPendingSave] = useState(false)
+  const [showScanAnother, setShowScanAnother] = useState(false)
 
   useEffect(() => {
     supabase.from('categories').select('*').then(({ data }) => {
@@ -86,13 +87,18 @@ export default function ReviewReceipt() {
   }
 
   async function analyzeWithAI() {
+    if (analyzing) return
     setAnalyzing(true)
     setAiError('')
     try {
       const compressed = imageData ? await compressImage(imageData) : imageData
-      const { data, error: fnError } = await supabase.functions.invoke('parse-receipt', {
+      const invokePromise = supabase.functions.invoke('parse-receipt', {
         body: { imageBase64: compressed }
       })
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('El análisis tardó demasiado. Intenta de nuevo.')), 20000)
+      )
+      const { data, error: fnError } = await Promise.race([invokePromise, timeoutPromise])
 
       if (fnError) throw new Error(fnError.message)
       if (!data?.data) throw new Error(data?.error ?? 'Sin respuesta de la IA')
@@ -172,7 +178,7 @@ export default function ReviewReceipt() {
         amount: parseFloat(amount) || 0,
         has_image: !!image_url,
       })
-      navigate('/history')
+      setShowScanAnother(true)
     }
   }
 
@@ -389,7 +395,7 @@ export default function ReviewReceipt() {
                   Impuesto
                 </label>
                 <div className="bg-surface-container-low p-4 rounded-xl flex items-center gap-2 focus-within:ring-2 focus-within:ring-surface-tint/40 transition-all">
-                  <span className="text-on-surface-variant font-semibold text-sm">$</span>
+                  <span className="text-on-surface-variant font-semibold text-sm">€</span>
                   <input
                     className="flex-1 bg-transparent border-none p-0 focus:ring-0 font-headline font-bold text-lg text-on-surface placeholder:text-on-surface-variant/40"
                     type="number"
@@ -486,16 +492,17 @@ export default function ReviewReceipt() {
         {/* Fixed Bottom Action */}
         <div className="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-background via-background/95 to-transparent">
           <div className="max-w-xl mx-auto flex gap-3">
-            {!analyzing && (
-              <button
-                type="button"
-                onClick={analyzeWithAI}
-                className="px-4 py-4 rounded-xl bg-surface-container-highest text-primary font-semibold flex items-center gap-2 active:scale-95 transition-transform"
-                title="Volver a analizar con IA"
-              >
-                <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={analyzeWithAI}
+              disabled={analyzing}
+              className="px-4 py-4 rounded-xl bg-surface-container-highest text-primary font-semibold flex items-center gap-2 active:scale-95 transition-transform disabled:opacity-40"
+              title="Volver a analizar con IA"
+            >
+              <span className={`material-symbols-outlined text-[20px] ${analyzing ? 'animate-spin' : ''}`}>
+                {analyzing ? 'progress_activity' : 'auto_awesome'}
+              </span>
+            </button>
             <button
               type="submit"
               disabled={saving || analyzing}
@@ -521,6 +528,38 @@ export default function ReviewReceipt() {
           </div>
         </div>
       </form>
+
+      {/* ¿Escanear otro? modal */}
+      {showScanAnother && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="bg-background rounded-3xl p-7 w-full max-w-sm shadow-2xl space-y-5">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-tertiary/10 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-tertiary text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+              </div>
+              <div>
+                <h3 className="font-headline font-bold text-on-surface text-lg leading-tight">Ticket guardado</h3>
+                <p className="text-on-surface-variant text-sm mt-1">¿Quieres escanear otro ticket?</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => navigate('/history')}
+                className="flex-1 py-3 rounded-xl bg-surface-container-highest text-on-surface font-semibold text-sm active:scale-95 transition-transform"
+              >
+                Ver historial
+              </button>
+              <button
+                onClick={() => navigate('/scanner')}
+                className="flex-1 py-3 rounded-xl bg-primary text-white font-semibold text-sm active:scale-95 transition-transform flex items-center justify-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[18px]">document_scanner</span>
+                Escanear otro
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

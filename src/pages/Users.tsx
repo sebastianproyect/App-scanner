@@ -356,7 +356,10 @@ export default function Users() {
                           : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
                       }`}
                     >
-                      {r === 'admin' ? '🔑 Administrador' : '👤 Empleado'}
+                      <span className="material-symbols-outlined text-[16px]">
+                        {r === 'admin' ? 'admin_panel_settings' : 'person'}
+                      </span>
+                      {r === 'admin' ? 'Administrador' : 'Empleado'}
                     </button>
                   ))}
                 </div>
@@ -365,7 +368,7 @@ export default function Users() {
 
             <button
               onClick={handleSaveEdit}
-              disabled={saving}
+              disabled={saving || !editName.trim()}
               className="w-full bg-primary text-white py-3.5 rounded-xl font-bold text-sm active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {saving ? (
