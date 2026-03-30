@@ -187,20 +187,19 @@ export default function ReviewReceipt() {
     if (!user) return
     setError('')
 
-    // ── Duplicate check ──────────────────────────────────────────────────────
+    // ── Duplicate check: mismo día + mismo importe ───────────────────────────
     const amountNum = parseFloat(amount) || 0
-    if (vendor.trim() && amountNum > 0) {
+    if (amountNum > 0 && date) {
       const { data: existing } = await supabase
         .from('receipts')
         .select('vendor, date, amount')
         .eq('user_id', user.id)
         .eq('date', date)
-        .ilike('vendor', `%${vendor.trim().split(' ')[0]}%`)
-        .limit(5)
+        .limit(20)
 
       const dup = existing?.find(r => {
         const diff = Math.abs(Number(r.amount) - amountNum)
-        return diff / (amountNum || 1) < 0.05   // within 5%
+        return diff < 0.01  // mismo importe al céntimo
       })
 
       if (dup) {
