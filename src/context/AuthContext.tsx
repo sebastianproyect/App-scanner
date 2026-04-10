@@ -23,36 +23,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function fetchProfile(userId: string) {
     // Retry up to 3 times — the DB trigger may not have run yet
     for (let i = 0; i < 3; i++) {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle()
-      if (data) { setProfile(data as Profile); return }
-      if (!error) break // Row simply doesn't exist yet
-      await new Promise(r => setTimeout(r, 500))
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle()
+        if (data) { setProfile(data as Profile); return }
+        if (!error) break // Row simply doesn't exist yet
+      } catch {
+        // network error — fall through to retry
+      }
+      if (i < 2) await new Promise(r => setTimeout(r, 500))
     }
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id).finally(() => setLoading(false))
-      } else {
-        setLoading(false)
-      }
-    })
+    let cancelled = false
+
+    // Safety net: never leave the app stuck in loading state
+    const safetyTimeout = setTimeout(() => {
+      if (!cancelled) setLoading(false)
+    }, 8000)
+
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (cancelled) return
+        setSession(session)
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          fetchProfile(session.user.id).finally(() => {
+            if (!cancelled) setLoading(false)
+          })
+        } else {
+          setLoading(false)
+        }
+      })
+      .catch(() => {
+        // getSession() rejected — Supabase client misconfigured or network down
+        if (!cancelled) setLoading(false)
+      })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (cancelled) return
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) fetchProfile(session.user.id)
       else setProfile(null)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      cancelled = true
+      clearTimeout(safetyTimeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function signIn(email: string, password: string) {

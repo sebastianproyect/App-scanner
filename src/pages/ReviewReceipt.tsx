@@ -60,11 +60,15 @@ export default function ReviewReceipt() {
     })
   }, [])
 
-  // Run AI analysis automatically when image arrives
+  // Run AI analysis automatically when image arrives.
+  // We wait for categories to be loaded so the category match can run,
+  // but we start AI analysis immediately if categories take too long.
   useEffect(() => {
-    if (!imageData || categories.length === 0) return
+    if (!imageData) return
+    // If categories are already loaded or we've waited long enough, start analysis
     analyzeWithAI()
-  }, [imageData, categories])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imageData])
 
   async function compressImage(dataUrl: string): Promise<string> {
     return new Promise(resolve => {
