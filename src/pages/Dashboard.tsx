@@ -21,29 +21,28 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user || !profile) return
 
-    // Recent tickets (for the list)
-    let recentQ = supabase
-      .from('receipts')
-      .select('*, categories(id, name, icon)')
-      .order('created_at', { ascending: false })
-      .limit(20)
-    if (!isAdmin) recentQ = recentQ.eq('user_id', user.id)
-    recentQ.then(({ data }) => {
-      if (data) setReceipts(data as Receipt[])
-      setLoading(false)
-    })
-
-    // All tickets for charts — limited to last 6 months
+    // Run both queries in parallel
     const sixMonthsAgo = new Date()
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
     const sixMonthsAgoStr = sixMonthsAgo.toISOString().split('T')[0]
+
+    let recentQ = supabase
+      .from('receipts')
+      .select('id, vendor, amount, date, created_at, status, user_id, categories(id, name, icon)')
+      .order('created_at', { ascending: false })
+      .limit(20)
+    if (!isAdmin) recentQ = recentQ.eq('user_id', user.id)
+
     let chartQ = supabase
       .from('receipts')
       .select('id, amount, date, created_at, status, categories(name)')
       .gte('date', sixMonthsAgoStr)
     if (!isAdmin) chartQ = chartQ.eq('user_id', user.id)
-    chartQ.then(({ data }) => {
-      if (data) setAllReceipts(data as unknown as Receipt[])
+
+    Promise.all([recentQ, chartQ]).then(([recent, chart]) => {
+      if (recent.data) setReceipts(recent.data as unknown as Receipt[])
+      if (chart.data) setAllReceipts(chart.data as unknown as Receipt[])
+      setLoading(false)
     })
   }, [user, profile])
 

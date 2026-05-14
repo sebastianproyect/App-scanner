@@ -1,13 +1,25 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { ReactNode } from 'react'
-import Dashboard from './pages/Dashboard'
-import Scanner from './pages/Scanner'
-import History from './pages/History'
-import ReviewReceipt from './pages/ReviewReceipt'
-import Login from './pages/Login'
-import Users from './pages/Users'
-import NotFound from './pages/NotFound'
+import { ReactNode, lazy, Suspense } from 'react'
+
+const Dashboard    = lazy(() => import('./pages/Dashboard'))
+const Scanner      = lazy(() => import('./pages/Scanner'))
+const History      = lazy(() => import('./pages/History'))
+const ReviewReceipt = lazy(() => import('./pages/ReviewReceipt'))
+const Login        = lazy(() => import('./pages/Login'))
+const Users        = lazy(() => import('./pages/Users'))
+const NotFound     = lazy(() => import('./pages/NotFound'))
+
+function PageLoader() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <img src="/icons/icon.png" alt="IDT" className="w-12 h-12 rounded-2xl object-contain animate-pulse" />
+        <p className="text-on-surface-variant text-sm font-medium">Cargando...</p>
+      </div>
+    </div>
+  )
+}
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth()
@@ -36,18 +48,21 @@ function AdminRoute({ children }: { children: ReactNode }) {
 
 function AppRoutes() {
   const { session } = useAuth()
+  const location = useLocation()
 
   return (
-    <Routes>
-      <Route path="/login" element={session ? <Navigate to="/dashboard" replace /> : <Login />} />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/scanner" element={<ProtectedRoute><Scanner /></ProtectedRoute>} />
-      <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
-      <Route path="/review" element={<ProtectedRoute><ReviewReceipt /></ProtectedRoute>} />
-      <Route path="/users" element={<ProtectedRoute><AdminRoute><Users /></AdminRoute></ProtectedRoute>} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes location={location}>
+        <Route path="/login" element={session ? <Navigate to="/dashboard" replace /> : <Login />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/scanner" element={<ProtectedRoute><Scanner /></ProtectedRoute>} />
+        <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+        <Route path="/review" element={<ProtectedRoute><ReviewReceipt /></ProtectedRoute>} />
+        <Route path="/users" element={<ProtectedRoute><AdminRoute><Users /></AdminRoute></ProtectedRoute>} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   )
 }
 
