@@ -109,7 +109,7 @@ export default function ReviewReceipt() {
         body: { imageBase64: compressed }
       })
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('El análisis tardó demasiado. Intenta de nuevo.')), 20000)
+        setTimeout(() => reject(new Error('El análisis tardó demasiado. Intenta de nuevo.')), 30000)
       )
       const { data, error: fnError } = await Promise.race([invokePromise, timeoutPromise])
 
@@ -291,13 +291,20 @@ export default function ReviewReceipt() {
           )}
 
           {aiError && (
-            <div className="bg-error-container/40 rounded-2xl p-4 mb-6 flex items-center gap-3 border border-error/20">
-              <div className="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center shrink-0">
+            <div className="bg-error-container/40 rounded-2xl p-4 mb-6 flex items-start gap-3 border border-error/20">
+              <div className="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center shrink-0 mt-0.5">
                 <span className="material-symbols-outlined text-error">warning</span>
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="font-semibold text-on-surface text-sm">{aiError}</p>
-                <p className="text-on-surface-variant text-xs">Puedes llenar los campos y guardar igual</p>
+                <p className="text-on-surface-variant text-xs mb-3">Puedes reintentar o llenar los campos manualmente</p>
+                <button
+                  onClick={() => { setAiError(''); analyzeWithAI() }}
+                  className="flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-lg active:scale-95 transition-transform"
+                >
+                  <span className="material-symbols-outlined text-[14px]">refresh</span>
+                  Reintentar análisis
+                </button>
               </div>
             </div>
           )}
