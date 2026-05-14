@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react'
+import { useState, useEffect, useRef, FormEvent } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase, writeAuditLog } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -51,14 +51,23 @@ export default function ReviewReceipt() {
   const [analyzing, setAnalyzing] = useState(false)
   const [aiDone, setAiDone] = useState(false)
   const [duplicateWarning, setDuplicateWarning] = useState<{ vendor: string; date: string; amount: number } | null>(null)
-  const [pendingSave, setPendingSave] = useState(false)
   const [showScanAnother, setShowScanAnother] = useState(false)
+  const pendingCategoryRef = useRef<string | null>(null)
 
   useEffect(() => {
     supabase.from('categories').select('*').then(({ data }) => {
       if (data) setCategories(data as Category[])
     })
   }, [])
+
+  // Apply pending category match if categories loaded after AI completed
+  useEffect(() => {
+    if (!pendingCategoryRef.current || categories.length === 0) return
+    const normalized = CATEGORY_MAP[pendingCategoryRef.current] ?? pendingCategoryRef.current
+    const match = categories.find(c => c.name.toLowerCase() === normalized.toLowerCase())
+    if (match) setCategoryId(match.id)
+    pendingCategoryRef.current = null
+  }, [categories])
 
   // Run AI analysis automatically when image arrives.
   // We wait for categories to be loaded so the category match can run,
@@ -121,13 +130,12 @@ export default function ReviewReceipt() {
       setPaymentMethod(result.payment_method || '')
       setNotes(result.notes || '')
 
-      // Match AI category to our categories list
+      // Match AI category to our categories list — store as pending if not loaded yet
       if (result.category) {
         const normalized = CATEGORY_MAP[result.category] ?? result.category
-        const match = categories.find(c =>
-          c.name.toLowerCase() === normalized.toLowerCase()
-        )
+        const match = categories.find(c => c.name.toLowerCase() === normalized.toLowerCase())
         if (match) setCategoryId(match.id)
+        else pendingCategoryRef.current = result.category
       }
 
       setAiDone(true)
@@ -142,7 +150,6 @@ export default function ReviewReceipt() {
   async function doSave() {
     if (!user) return
     setDuplicateWarning(null)
-    setPendingSave(false)
     setSaving(true)
     setError('')
 
@@ -208,7 +215,6 @@ export default function ReviewReceipt() {
 
       if (dup) {
         setDuplicateWarning({ vendor: dup.vendor, date: dup.date, amount: Number(dup.amount) })
-        setPendingSave(true)
         return
       }
     }
@@ -476,7 +482,7 @@ export default function ReviewReceipt() {
             <p className="text-on-surface-variant text-sm">¿Quieres guardarlo de todas formas o cancelar?</p>
             <div className="flex gap-3">
               <button
-                onClick={() => { setDuplicateWarning(null); setPendingSave(false) }}
+                onClick={() => setDuplicateWarning(null)}
                 className="flex-1 py-3 rounded-xl bg-surface-container-highest text-on-surface font-semibold text-sm active:scale-95 transition-transform"
               >
                 Cancelar

@@ -17,7 +17,14 @@ export default function Login() {
     const { error } = await signIn(email, password)
     setLoading(false)
     if (error) {
-      setError('Correo o contraseña incorrectos')
+      const msg = error.includes('Invalid login credentials') || error.includes('invalid_credentials')
+        ? 'Correo o contraseña incorrectos'
+        : error.includes('Email not confirmed')
+        ? 'Email no confirmado. Revisa tu bandeja de entrada.'
+        : error.includes('Too many requests')
+        ? 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.'
+        : 'Error al iniciar sesión. Contacta al administrador.'
+      setError(msg)
     } else {
       navigate('/dashboard')
     }

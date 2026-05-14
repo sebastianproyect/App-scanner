@@ -114,6 +114,11 @@ export default function Users() {
 
   async function handleDelete() {
     if (!deleteUser) return
+    if (deleteUser.id === profile?.id) {
+      setError('No puedes eliminar tu propia cuenta.')
+      setDeleteUser(null)
+      return
+    }
     setDeleting(true)
     const result = await callManageUsers('delete_user', { user_id: deleteUser.id })
     setDeleting(false)

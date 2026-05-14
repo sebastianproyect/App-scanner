@@ -88,8 +88,10 @@ export default function History() {
 
     if (!isAdmin) query = query.eq('user_id', user!.id)
 
-    const { data } = await query
-    if (data) {
+    const { data, error } = await query
+    if (error) {
+      setFetchError('Error al cargar más tickets. Intenta de nuevo.')
+    } else if (data) {
       setReceipts(prev => [...prev, ...data as Receipt[]])
       setHasMore(data.length === PAGE_SIZE)
     }
